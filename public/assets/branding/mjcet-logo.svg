@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#183153" />
+      <stop offset="100%" stop-color="#0E1E34" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24" />
+      <stop offset="50%" stop-color="#D97706" />
+      <stop offset="100%" stop-color="#B45309" />
+    </linearGradient>
+    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2DD4BF" />
+      <stop offset="100%" stop-color="#0F766E" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Outer Ring Base -->
+  <circle cx="200" cy="200" r="188" fill="url(#shieldGrad)" stroke="url(#goldGrad)" stroke-width="7" filter="url(#shadow)" />
+  <circle cx="200" cy="200" r="172" fill="none" stroke="#2DD4BF" stroke-width="1.8" stroke-dasharray="4 3" opacity="0.8" />
+
+  <!-- Inner Crest Shield -->
+  <path d="M 120 100 Q 200 80 280 100 Q 280 210 200 290 Q 120 210 120 100 Z" fill="#13233D" stroke="url(#goldGrad)" stroke-width="4.5" />
+
+  <!-- Shield Interior Quadrants -->
+  <!-- Gear of Engineering (Top Left) -->
+  <g transform="translate(162, 142) scale(0.65)">
+    <circle cx="0" cy="0" r="26" fill="none" stroke="#FBBF24" stroke-width="8" />
+    <circle cx="0" cy="0" r="10" fill="#FBBF24" />
+    <path d="M-5 -36 H5 V-24 H-5 Z M-5 24 H5 V36 H-5 Z M-36 -5 V5 H-24 V-5 Z M24 -5 V5 H36 V-5 Z" fill="#FBBF24" />
+    <path d="M-26 -26 L-18 -18 M18 18 L26 26 M-26 26 L-18 18 M18 -18 L26 -26" stroke="#FBBF24" stroke-width="7" stroke-linecap="round" />
+  </g>
+
+  <!-- Lamp / Torch of Knowledge (Top Right) -->
+  <g transform="translate(238, 142) scale(0.68)">
+    <!-- Flame -->
+    <path d="M 0 -22 C -6 -12 -8 -5 0 8 C 8 -5 6 -12 0 -22 Z" fill="#F97316" />
+    <path d="M 0 -16 C -3 -9 -4 -4 0 5 C 4 -4 3 -9 0 -16 Z" fill="#FBBF24" />
+    <!-- Lamp Basin -->
+    <path d="M -18 8 Q 0 14 18 8 L 14 20 Q 0 24 -14 20 Z" fill="url(#goldGrad)" />
+    <rect x="-4" y="22" width="8" height="8" rx="2" fill="url(#goldGrad)" />
+    <path d="M -12 30 H 12" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round" />
+  </g>
+
+  <!-- Open Book of Learning (Bottom Center) -->
+  <g transform="translate(200, 222) scale(0.72)">
+    <path d="M 0 5 Q -25 -10 -45 -2 L -45 28 Q -25 20 0 35 Q 25 20 45 28 L 45 -2 Q 25 -10 0 5 Z" fill="#E2F1F8" stroke="#159E9A" stroke-width="3" />
+    <line x1="0" y1="5" x2="0" y2="35" stroke="#0F766E" stroke-width="2.5" />
+    <!-- Text Lines -->
+    <line x1="-35" y1="8" x2="-10" y2="8" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" />
+    <line x1="-35" y1="15" x2="-10" y2="15" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" />
+    <line x1="-35" y1="22" x2="-14" y2="22" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" />
+    <line x1="10" y1="8" x2="35" y2="8" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" />
+    <line x1="10" y1="15" x2="35" y2="15" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" />
+    <line x1="14" y1="22" x2="35" y2="22" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" />
+  </g>
+
+  <!-- Banner / Scroll across base -->
+  <path d="M 70 305 Q 200 330 330 305 L 340 330 Q 200 358 60 330 Z" fill="url(#goldGrad)" stroke="#78350F" stroke-width="1.5" />
+  <text x="200" y="325" font-family="system-ui, -apple-system, sans-serif" font-size="14.5" font-weight="800" fill="#183153" text-anchor="middle" letter-spacing="1.5">SULTAN-UL-ULOOM</text>
+
+  <!-- Circular Arch Text: MJCET HYDERABAD -->
+  <path id="textCircleTop" d="M 52 200 A 148 148 0 1 1 348 200" fill="none" />
+  <text fill="#FFFFFF" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="700" letter-spacing="3.2">
+    <textPath href="#textCircleTop" startOffset="50%" text-anchor="middle">
+      MUFFAKHAM JAH COLLEGE OF ENGG &amp; TECH
+    </textPath>
+  </text>
+
+  <!-- Circular Arch Text: ESTD 1980 -->
+  <path id="textCircleBottom" d="M 72 250 A 148 148 0 0 0 328 250" fill="none" />
+  <text fill="#FBBF24" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="800" letter-spacing="4">
+    <textPath href="#textCircleBottom" startOffset="50%" text-anchor="middle">
+      ESTD 1980 • HYDERABAD
+    </textPath>
+  </text>
+</svg>

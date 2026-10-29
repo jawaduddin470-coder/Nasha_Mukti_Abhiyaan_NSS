@@ -1,0 +1,151 @@
+/**
+ * Developers & Platform Contributors Dataset
+ * NSS MJCET Nasha Mukti Abhiyaan
+ *
+ * NOTE: Contributor records are structured placeholder profiles representing
+ * collegiate volunteers, student developers, and faculty advisors.
+ * Real credentials and verified links will be managed in Phase 5 via MongoDB Atlas CMS.
+ */
+
+import { DeveloperProfile } from '../types/developer';
+
+export const DEVELOPER_PROFILES: DeveloperProfile[] = [
+  {
+    id: 'dev-01',
+    fullName: 'Mohammed Meraj Uddin',
+    role: 'Lead Architect & Technologist',
+    roleCategory: 'engineering',
+    departmentOrAffiliation: 'MJCET',
+    bio: '',
+    avatarUrl: '',
+    skills: [],
+    contributions: [],
+    socialLinks: {
+      github: '',
+      linkedin: '',
+      portfolio: '',
+    },
+    featured: true,
+    displayOrder: 1,
+    publicationStatus: 'published',
+    isPlaceholder: false,
+    createdAt: '2026-10-20T10:00:00Z',
+    updatedAt: '2026-10-29T18:00:00Z',
+  },
+  {
+    id: 'dev-02',
+    fullName: 'Shaik Adnan Hyder',
+    role: 'Platform Engineering & UI Lead',
+    roleCategory: 'engineering',
+    departmentOrAffiliation: 'MJCET',
+    bio: '',
+    avatarUrl: '',
+    skills: [],
+    contributions: [],
+    socialLinks: {
+      github: '',
+      linkedin: '',
+    },
+    featured: true,
+    displayOrder: 2,
+    publicationStatus: 'published',
+    isPlaceholder: false,
+    createdAt: '2026-10-21T11:00:00Z',
+    updatedAt: '2026-10-29T18:00:00Z',
+  },
+  {
+    id: 'dev-03',
+    fullName: 'Mohd. Tariq',
+    role: 'NSS Lead Coordinator & Community Campaigner',
+    roleCategory: 'nss_leadership',
+    departmentOrAffiliation: 'Mechanical Engineering / NSS Core Unit',
+    bio: 'Directs volunteer mobilization, field outreach drives, community walkathons, and verified helpline integrations with regional medical consultation partners.',
+    skills: ['Grassroots Leadership', 'Volunteer Mobilization', 'Field Logistics', 'Campaign Public Relations'],
+    contributions: [
+      'Coordinated the mass pledge signatures and campus walkathon drives',
+      'Liaised with Telangana State Anti-Narcotics Bureau (TSNAB)',
+      'Organized peer counseling circles across undergraduate departments',
+    ],
+    socialLinks: {
+      linkedin: 'https://linkedin.com',
+      email: 'nss@mjcet.ac.in',
+    },
+    featured: true,
+    displayOrder: 3,
+    publicationStatus: 'published',
+    isPlaceholder: true,
+    createdAt: '2026-10-22T09:00:00Z',
+    updatedAt: '2026-10-28T18:00:00Z',
+  },
+  {
+    id: 'dev-04',
+    fullName: 'Dr. K. S. Sharma',
+    role: 'NSS Program Officer & Institutional Faculty Advisor',
+    roleCategory: 'mentorship',
+    departmentOrAffiliation: 'Faculty Advisory Board, MJCET',
+    bio: 'Guides institutional compliance, verified de-addiction medical guidelines, ethical student governance, and strategic alignment with the national Nasha Mukt Bharat mission.',
+    skills: ['Institutional Governance', 'Public Health Advocacy', 'Curricular Sensitization', 'Mentorship'],
+    contributions: [
+      'Vetted evidence-based clinical rationales and dopamine neurobiology frameworks',
+      'Facilitated institutional approvals with Osmania University NSS Cell',
+      'Supervised campus-wide pledge initiatives and civic engagement outreach',
+    ],
+    socialLinks: {
+      email: 'programofficer@mjcet.ac.in',
+    },
+    featured: false,
+    displayOrder: 4,
+    publicationStatus: 'published',
+    isPlaceholder: true,
+    createdAt: '2026-10-15T08:00:00Z',
+    updatedAt: '2026-10-28T18:00:00Z',
+  },
+  {
+    id: 'dev-05',
+    fullName: 'Ayesha Siddiqua',
+    role: 'Full-Stack Developer & Clinical Content Researcher',
+    roleCategory: 'engineering',
+    departmentOrAffiliation: 'Information Technology, MJCET',
+    bio: 'Integrated scientific research from WHO and NIMHANS to formulate non-stigmatizing awareness criteria, and architected MongoDB schema models for the upcoming Phase 5 CMS.',
+    skills: ['TypeScript', 'Node.js', 'MongoDB', 'Clinical Research', 'RESTful APIs'],
+    contributions: [
+      'Drafted clinical neuroscience explanations for the interactive assessment',
+      'Designed future administrative database collection schemas',
+      'Implemented print-to-PDF certificate styling engine',
+    ],
+    socialLinks: {
+      github: 'https://github.com',
+      linkedin: 'https://linkedin.com',
+    },
+    featured: false,
+    displayOrder: 5,
+    publicationStatus: 'published',
+    isPlaceholder: true,
+    createdAt: '2026-10-24T14:00:00Z',
+    updatedAt: '2026-10-28T18:00:00Z',
+  },
+  {
+    id: 'dev-06',
+    fullName: 'Adil Hussain',
+    role: 'Media Production & Visual Documentation Lead',
+    roleCategory: 'documentation',
+    departmentOrAffiliation: 'Electronics & Communication Engineering, MJCET',
+    bio: 'Curates on-the-ground photography, field video documentation, street theatre demonstrations, and photographic metadata across all campaign milestones.',
+    skills: ['Digital Photography', 'Color Grading', 'Field Reporting', 'Visual Archiving'],
+    contributions: [
+      'Documented campus pledge gatherings and student rallies',
+      'Authored context stories and metadata for the 3D gallery archive',
+      'Managed audio soundtrack integration and ambient soundscape licensing',
+    ],
+    socialLinks: {
+      github: 'https://github.com',
+      linkedin: 'https://linkedin.com',
+    },
+    featured: false,
+    displayOrder: 6,
+    publicationStatus: 'published',
+    isPlaceholder: true,
+    createdAt: '2026-10-25T16:00:00Z',
+    updatedAt: '2026-10-28T18:00:00Z',
+  },
+];

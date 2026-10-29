@@ -1,0 +1,96 @@
+/**
+ * NSS MJCET Nasha Mukti Abhiyaan - Design Tokens & Theme Variables
+ * Phase 5.4 - Zero Plain-White Surfaces, Immersive Atmospheric Identity
+ */
+
+:root {
+  /* Surfaces - Zero Plain-White; Layered Atmospheric Ice Blue, Warm Ivory & Misty Tints */
+  --color-surface-base: #E8F3FA;
+  --color-surface-subtle: #F5F0E5;
+  --color-surface-card: #EAF5FB;
+  --color-surface-elevated: #E3F1F9;
+  --color-surface-teal: #DDF3F0;
+  --color-surface-emerald: #DDF0E6;
+  --color-surface-sage: #E2ECE5;
+  --color-surface-ivory: #F5F0E5;
+  --color-surface-mist: #DCEBF5;
+  --color-border-subtle: #CFE3F0;
+  --color-border-strong: #B9DDF5;
+
+  /* Typography - Deep Navy (#183153) & Slate (#64748B) */
+  --color-text-headline: #183153;
+  --color-text-body: #1F3F6B;
+  --color-text-secondary: #334C73;
+  --color-text-muted: #64748B;
+
+  /* Primary Interactive & Brand */
+  --color-primary-navy: #183153;
+  --color-midnight-navy: #10243D;
+  --color-deep-blue: #24476B;
+  --color-primary-blue: #4F8FE8;
+  --color-sky-blue: #B9DDF5;
+  --color-ice-blue: #E8F3FA;
+  --color-mist-blue: #DCEBF5;
+
+  /* Action & Awareness Accents */
+  --color-teal: #159E9A;
+  --color-teal-hover: #0F8380;
+  --color-teal-soft: #DDF3F0;
+  --color-emerald: #239B70;
+  --color-emerald-soft: #DDF0E6;
+  --color-sage: #BFDCCB;
+  --color-warm-ivory: #F5F0E5;
+  --color-sand: #E9E0D0;
+
+  /* Restrained Institutional Highlights */
+  --color-saffron: #F2A64A;
+  --color-saffron-hover: #D88427;
+  --color-saffron-soft: #FDF3E5;
+  --color-gold: #D97706;
+
+  /* System State */
+  --color-error: #D94848;
+
+  /* Contrast Accent */
+  --color-contrast-navy: #183153;
+
+  /* Layout */
+  --max-content-width: 1240px;
+  --header-height: 4.5rem;
+}
+
+/* Dark Theme Overrides - Deep Blue-Navy Base (Not pitch black) */
+html.dark {
+  --color-surface-base: #0B1524;
+  --color-surface-subtle: #10243D;
+  --color-surface-card: #14243D;
+  --color-surface-elevated: #1B2F4E;
+  --color-surface-teal: #0D262A;
+  --color-surface-emerald: #0D2820;
+  --color-surface-sage: #162B28;
+  --color-surface-ivory: #1A2535;
+  --color-surface-mist: #15273F;
+  --color-border-subtle: #243A5E;
+  --color-border-strong: #325080;
+
+  --color-text-headline: #F4FAFD;
+  --color-text-body: #E1EDFD;
+  --color-text-secondary: #94A3B8;
+  --color-text-muted: #64748B;
+
+  --color-teal-soft: rgba(21, 158, 154, 0.16);
+  --color-emerald-soft: rgba(35, 155, 112, 0.16);
+  --color-saffron-soft: rgba(242, 166, 74, 0.15);
+  --color-contrast-navy: #0B1524;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
