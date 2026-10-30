@@ -9,14 +9,20 @@ import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, Auth } from 'firebase/auth';
 import { FirebaseClientConfig } from '../../types/firebase';
 
+const rawApiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+const isPlaceholder = (val: string | undefined): boolean =>
+  !val || val === 'AIzaSy...' || val.startsWith('your-') || val.includes('abcdef');
+
 export const firebaseConfig: FirebaseClientConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  apiKey: !isPlaceholder(rawApiKey) ? rawApiKey : 'AIzaSyAJ4Gyhaw-gCV8FAINJ_GBs4CaCUW-NR3s',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'nashamuktiabhiya.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'nashamuktiabhiya',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'nashamuktiabhiya.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '561050264672',
+  appId: !isPlaceholder(import.meta.env.VITE_FIREBASE_APP_ID)
+    ? import.meta.env.VITE_FIREBASE_APP_ID
+    : '1:561050264672:web:e24f2e91ab5ad55ed04f05',
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || 'G-4KFH8PXG0F',
 };
 
 /**
