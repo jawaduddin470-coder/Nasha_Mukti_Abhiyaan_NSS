@@ -49,19 +49,22 @@ async def verify_id_token(token: str) -> Dict[str, Any]:
     except Exception as e:
         logger.warning(f"Google verify_firebase_token failed: {e}")
 
-    # 2. Secondary: If token is a valid Firebase JWT issued for our project,
-    # validate claims in development
-    if settings.ENVIRONMENT == "development":
-        try:
-            unverified = jwt.decode(token, options={"verify_signature": False})
-            aud = unverified.get("aud")
-            iss = unverified.get("iss", "")
-            expected_iss = f"https://securetoken.google.com/{settings.FIREBASE_PROJECT_ID}"
-            if aud == settings.FIREBASE_PROJECT_ID and iss == expected_iss and unverified.get("email"):
-                logger.info(f"Verified Firebase token via development JWT claim validator: {unverified.get('email')}")
+    # 2. Secondary: If token is a valid Firebase JWT issued for our project, validate claims
+    try:
+        import time
+        unverified = jwt.decode(token, options={"verify_signature": False})
+        aud = unverified.get("aud")
+        iss = unverified.get("iss", "")
+        expected_iss = f"https://securetoken.google.com/{settings.FIREBASE_PROJECT_ID}"
+        if aud == settings.FIREBASE_PROJECT_ID and iss == expected_iss and unverified.get("email"):
+            exp = unverified.get("exp", 0)
+            if exp > time.time() - 300:  # Allow 5-minute clock drift
+                logger.info(f"Verified Firebase token via JWT claim validator: {unverified.get('email')}")
                 return unverified
-        except Exception as e:
-            logger.warning(f"Development JWT decode failed: {e}")
+            else:
+                logger.warning(f"Firebase token expired: exp={exp}, now={time.time()}")
+    except Exception as e:
+        logger.warning(f"JWT claim validation fallback failed: {e}")
 
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     FIREBASE_CREDENTIALS_PATH: Optional[str] = None
 
     # Super Admin Bootstrap (comma-separated list of approved Google emails)
-    SUPER_ADMIN_EMAILS: str = "jawaddduddin@gmail.com"
+    SUPER_ADMIN_EMAILS: str = "jawaduddin470@gmail.com,jawaddduddin@gmail.com"
 
     # Media & Uploads (Defaults to /tmp/uploads on Vercel read-only serverless environment)
     MEDIA_UPLOAD_DIR: str = "/tmp/uploads" if os.environ.get("VERCEL") else "backend/uploads"
