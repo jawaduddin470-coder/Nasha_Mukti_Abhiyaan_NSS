@@ -3,7 +3,20 @@ FastAPI Main Application Entrypoint
 NSS MJCET Nasha Mukti Abhiyaan Backend API
 """
 
+import sys
 import os
+import types
+
+# Ensure 'backend' namespace is available even when Vercel deploys with root='backend'
+if "backend" not in sys.modules:
+    _current_dir = os.path.dirname(os.path.abspath(__file__))
+    _backend_dir = os.path.dirname(_current_dir) if os.path.basename(_current_dir) == "app" else _current_dir
+    _pkg = types.ModuleType("backend")
+    _pkg.__path__ = [_backend_dir]
+    sys.modules["backend"] = _pkg
+    if _backend_dir not in sys.path:
+        sys.path.insert(0, _backend_dir)
+
 from contextlib import asynccontextmanager
 import logging
 from fastapi import FastAPI, status
@@ -97,6 +110,7 @@ except OSError:
 
 
 # Health & Readiness Endpoints
+@app.get("/", status_code=status.HTTP_200_OK, tags=["System"])
 @app.get("/health", status_code=status.HTTP_200_OK, tags=["System"])
 @app.get("/api/v1/health", status_code=status.HTTP_200_OK, tags=["System"])
 async def health_check():
