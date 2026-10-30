@@ -102,6 +102,8 @@ app.add_middleware(
 # Resilient image serving handler with filesystem and MongoDB binary fallback
 @app.get("/uploads/{filename:path}", tags=["Media"])
 @app.get("/api/v1/uploads/{filename:path}", tags=["Media"])
+@app.head("/uploads/{filename:path}", tags=["Media"])
+@app.head("/api/v1/uploads/{filename:path}", tags=["Media"])
 async def serve_uploaded_media(
     filename: str,
     db: AsyncIOMotorDatabase = Depends(get_database),
