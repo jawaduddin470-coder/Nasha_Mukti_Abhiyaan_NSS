@@ -38,6 +38,9 @@ import {
   AlertCircle,
   Loader2,
   Check,
+  Archive,
+  RotateCcw,
+  Sliders,
 } from 'lucide-react';
 import { useAdminAuth, AdminRole } from '../../context/AdminAuthContext';
 import { apiClient, API_BASE_URL } from '../../services/apiClient';
@@ -45,9 +48,14 @@ import { auth } from '../../lib/firebase/config';
 import { MediaPickerInput } from '../../components/admin/MediaPickerInput';
 import { MediaLibraryModal } from '../../components/admin/MediaLibraryModal';
 import { MediaItem, fetchMediaItems, deleteMediaAsset } from '../../services/mediaService';
+import { HomepageContentManager } from '../../components/admin/HomepageContentManager';
+import { PermanentDeleteModal } from '../../components/admin/PermanentDeleteModal';
+import { activityService } from '../../services/activityService';
+import { galleryService } from '../../services/galleryService';
 
 type TabKey =
   | 'overview'
+  | 'homepage_manager'
   | 'activities'
   | 'gallery'
   | 'media'
@@ -139,6 +147,18 @@ export const AdminDashboardPage: React.FC = () => {
           >
             <LayoutDashboard className="w-4 h-4" />
             <span>Overview</span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange('homepage_manager')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
+              activeTab === 'homepage_manager'
+                ? 'bg-[#159E9A] text-white font-semibold shadow-md'
+                : 'text-white/75 hover:bg-[#1E3B63] hover:text-white'
+            }`}
+          >
+            <Sliders className="w-4 h-4 text-[#A8D8CB]" />
+            <span>Homepage Content Manager</span>
           </button>
 
           <button
@@ -296,6 +316,7 @@ export const AdminDashboardPage: React.FC = () => {
       {/* Main Content Area */}
       <main className="flex-1 min-w-0 p-4 md:p-8 overflow-y-auto">
         {activeTab === 'overview' && <OverviewView onNavigate={handleTabChange} isSuperAdmin={isSuperAdmin} />}
+        {activeTab === 'homepage_manager' && <HomepageContentManager />}
         {activeTab === 'activities' && <ActivitiesView />}
         {activeTab === 'gallery' && <GalleryView />}
         {activeTab === 'media' && <MediaLibraryView />}
@@ -483,6 +504,10 @@ const ActivitiesView: React.FC = () => {
   const [editingActivity, setEditingActivity] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft' | 'archived'>('all');
+  const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [actionFeedback, setActionFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Modal Form State
   const [coverImage, setCoverImage] = useState('');
@@ -601,20 +626,63 @@ const ActivitiesView: React.FC = () => {
       setIsModalOpen(false);
       setEditingActivity(null);
       fetchActivities();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nmba_cms_updated', { detail: { type: 'activities' } }));
+      }
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to save activity');
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm(`Are you sure you want to archive activity '${id}'?`)) return;
+  const handleArchive = async (act: any) => {
     try {
-      await apiClient.delete(`/admin/activities/${id}`);
+      await activityService.archiveActivity(act.id);
       fetchActivities();
+      setActionFeedback({
+        type: 'success',
+        message: `Activity "${act.title}" has been archived and hidden from public view. You can restore it anytime.`,
+      });
     } catch (err: any) {
-      alert(err.message || 'Failed to delete activity');
+      setActionFeedback({ type: 'error', message: err.message || 'Failed to archive activity' });
     }
   };
+
+  const handleRestore = async (act: any) => {
+    try {
+      await activityService.restoreActivity(act.id);
+      fetchActivities();
+      setActionFeedback({
+        type: 'success',
+        message: `Activity "${act.title}" has been restored to published status and is now visible on public sections.`,
+      });
+    } catch (err: any) {
+      setActionFeedback({ type: 'error', message: err.message || 'Failed to restore activity' });
+    }
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!permanentDeleteTarget) return;
+    try {
+      setIsDeleting(true);
+      await activityService.deleteActivityPermanently(permanentDeleteTarget.id);
+      const title = permanentDeleteTarget.title;
+      setPermanentDeleteTarget(null);
+      fetchActivities();
+      setActionFeedback({
+        type: 'success',
+        message: `Activity "${title}" was permanently deleted from the database. Shared images remain safe.`,
+      });
+    } catch (err: any) {
+      setActionFeedback({ type: 'error', message: err.message || 'Failed to delete activity permanently' });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const filteredActivities = activities.filter((act) => {
+    if (statusFilter === 'all') return true;
+    return act.publicationStatus?.toLowerCase() === statusFilter;
+  });
 
   return (
     <div className="space-y-6 max-w-6xl">
@@ -631,6 +699,81 @@ const ActivitiesView: React.FC = () => {
         >
           <Plus className="w-4 h-4" />
           <span>New Activity</span>
+        </button>
+      </div>
+
+      {/* Action Feedback Banner */}
+      {actionFeedback && (
+        <div
+          role="alert"
+          className={`p-4 rounded-xl border flex items-center justify-between gap-3 text-xs font-medium animate-fadeIn ${
+            actionFeedback.type === 'success'
+              ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+              : 'bg-red-50 text-red-900 border-red-200'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            {actionFeedback.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+            )}
+            <span>{actionFeedback.message}</span>
+          </div>
+          <button
+            onClick={() => setActionFeedback(null)}
+            className="text-slate-400 hover:text-slate-700 p-1"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Status Filter Tabs */}
+      <div className="flex items-center gap-2 border-b border-[#CFE3F0] pb-2">
+        <button
+          type="button"
+          onClick={() => setStatusFilter('all')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            statusFilter === 'all'
+              ? 'bg-[#183153] text-white shadow-xs'
+              : 'text-slate-600 hover:bg-[#EAF6FC] hover:text-[#183153]'
+          }`}
+        >
+          All ({activities.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setStatusFilter('published')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            statusFilter === 'published'
+              ? 'bg-[#159E9A] text-white shadow-xs'
+              : 'text-slate-600 hover:bg-[#EAF6FC] hover:text-[#183153]'
+          }`}
+        >
+          Published ({activities.filter((a) => a.publicationStatus === 'published').length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setStatusFilter('draft')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            statusFilter === 'draft'
+              ? 'bg-amber-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-[#EAF6FC] hover:text-[#183153]'
+          }`}
+        >
+          Drafts ({activities.filter((a) => a.publicationStatus === 'draft').length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setStatusFilter('archived')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            statusFilter === 'archived'
+              ? 'bg-slate-700 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-[#EAF6FC] hover:text-[#183153]'
+          }`}
+        >
+          Archived Items ({activities.filter((a) => a.publicationStatus === 'archived').length})
         </button>
       </div>
 
@@ -653,66 +796,114 @@ const ActivitiesView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#D7E7F0]">
-              {activities.map((act) => {
-                const totalImg = (act.coverImage ? 1 : 0) + (act.galleryImages?.length || 0);
-                return (
-                  <tr key={act.id} className="hover:bg-[#F0F7FB]/60">
-                    <td className="py-3.5 px-4 font-bold text-[#183153] max-w-xs truncate">
-                      {act.title}
-                    </td>
-                    <td className="py-3.5 px-3">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#EAF6FC] text-[#159E9A] uppercase tracking-wider">
-                        {act.category}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-3 text-slate-600">
-                      <div>{act.date}</div>
-                      <div className="text-[11px] text-slate-400 truncate max-w-[140px]">{act.venue}</div>
-                    </td>
-                    <td className="py-3.5 px-3 font-mono text-slate-600">
-                      <span className="px-1.5 py-0.5 rounded bg-[#F0F7FB] border border-[#D7E7F0] font-bold text-[11px] text-[#183153]">
-                        {totalImg}/5 images
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-3">
-                      <span
-                        className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                          act.publicationStatus === 'published'
-                            ? 'bg-emerald-50 text-[#239B70] border border-emerald-200'
-                            : act.publicationStatus === 'draft'
-                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                            : 'bg-slate-100 text-slate-600'
-                        }`}
-                      >
-                        {act.publicationStatus}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-3 font-mono font-bold text-slate-600">{act.displayOrder}</td>
-                    <td className="py-3.5 px-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => openEditActivityModal(act)}
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-[#159E9A] hover:bg-[#EAF6FC] transition-colors"
-                          title="Edit Activity"
+              {filteredActivities.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-slate-400">
+                    No activities found matching "{statusFilter}".
+                  </td>
+                </tr>
+              ) : (
+                filteredActivities.map((act) => {
+                  const totalImg = (act.coverImage ? 1 : 0) + (act.galleryImages?.length || 0);
+                  const isArchived = act.publicationStatus === 'archived';
+                  return (
+                    <tr key={act.id} className="hover:bg-[#F0F7FB]/60">
+                      <td className="py-3.5 px-4 font-bold text-[#183153] max-w-xs truncate">
+                        {act.title}
+                      </td>
+                      <td className="py-3.5 px-3">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#EAF6FC] text-[#159E9A] uppercase tracking-wider">
+                          {act.category}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-3 text-slate-600">
+                        <div>{act.date}</div>
+                        <div className="text-[11px] text-slate-400 truncate max-w-[140px]">{act.venue}</div>
+                      </td>
+                      <td className="py-3.5 px-3 font-mono text-slate-600">
+                        <span className="px-1.5 py-0.5 rounded bg-[#F0F7FB] border border-[#D7E7F0] font-bold text-[11px] text-[#183153]">
+                          {totalImg}/5 images
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-3">
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            act.publicationStatus === 'published'
+                              ? 'bg-emerald-50 text-[#239B70] border border-emerald-200'
+                              : act.publicationStatus === 'draft'
+                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                              : 'bg-slate-200 text-slate-700 border border-slate-300'
+                          }`}
                         >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(act.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                          title="Delete Activity"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                          {act.publicationStatus}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-3 font-mono font-bold text-slate-600">{act.displayOrder}</td>
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {!isArchived ? (
+                            <>
+                              <button
+                                onClick={() => openEditActivityModal(act)}
+                                className="p-1.5 rounded-lg text-slate-500 hover:text-[#159E9A] hover:bg-[#EAF6FC] transition-colors"
+                                title="Edit Activity"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleArchive(act)}
+                                className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 transition-colors"
+                                title="Archive (Removes from public view, preserves data)"
+                              >
+                                <Archive className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setPermanentDeleteTarget(act)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                title="Permanently Delete (Purge from database)"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleRestore(act)}
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors text-[11px] font-semibold"
+                                title="Restore Activity to Published"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                <span>Restore</span>
+                              </button>
+                              <button
+                                onClick={() => setPermanentDeleteTarget(act)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                title="Permanently Delete (Purge from database)"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
       )}
+
+      {/* Permanent Delete Confirmation Modal */}
+      <PermanentDeleteModal
+        isOpen={!!permanentDeleteTarget}
+        title={permanentDeleteTarget?.title || ''}
+        itemType="activity"
+        onClose={() => setPermanentDeleteTarget(null)}
+        onConfirm={handlePermanentDelete}
+        isDeleting={isDeleting}
+      />
 
       {/* Activity Create/Edit Modal */}
       {isModalOpen && (
@@ -958,6 +1149,10 @@ const GalleryView: React.FC = () => {
   const [editingPhoto, setEditingPhoto] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'archived'>('all');
+  const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [actionFeedback, setActionFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Form State
   const [imageUrl, setImageUrl] = useState('');
@@ -1040,20 +1235,67 @@ const GalleryView: React.FC = () => {
       setIsModalOpen(false);
       setEditingPhoto(null);
       fetchPhotos();
+      setActionFeedback({
+        type: 'success',
+        message: `Photograph "${title}" saved successfully.`,
+      });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nmba_cms_updated', { detail: { type: 'gallery' } }));
+      }
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to save photograph.');
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm(`Delete photo '${id}'?`)) return;
+  const handleArchive = async (photo: any) => {
     try {
-      await apiClient.delete(`/admin/gallery/${id}`);
+      await galleryService.archiveGalleryPhoto(photo.id);
       fetchPhotos();
-    } catch (e: any) {
-      alert(e.message || 'Delete failed');
+      setActionFeedback({
+        type: 'success',
+        message: `Photograph "${photo.title}" archived. It is hidden from the public gallery and homepage but can be restored anytime.`,
+      });
+    } catch (err: any) {
+      setActionFeedback({ type: 'error', message: err.message || 'Failed to archive photograph' });
     }
   };
+
+  const handleRestore = async (photo: any) => {
+    try {
+      await galleryService.restoreGalleryPhoto(photo.id);
+      fetchPhotos();
+      setActionFeedback({
+        type: 'success',
+        message: `Photograph "${photo.title}" restored to published status.`,
+      });
+    } catch (err: any) {
+      setActionFeedback({ type: 'error', message: err.message || 'Failed to restore photograph' });
+    }
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!permanentDeleteTarget) return;
+    try {
+      setIsDeleting(true);
+      await galleryService.deleteGalleryPhotoPermanently(permanentDeleteTarget.id);
+      const title = permanentDeleteTarget.title;
+      setPermanentDeleteTarget(null);
+      fetchPhotos();
+      setActionFeedback({
+        type: 'success',
+        message: `Photograph "${title}" was permanently removed from MongoDB. Shared images remain safe.`,
+      });
+    } catch (err: any) {
+      setActionFeedback({ type: 'error', message: err.message || 'Failed to permanently delete photograph' });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const filteredPhotos = photos.filter((p) => {
+    if (statusFilter === 'all') return true;
+    return p.publicationStatus?.toLowerCase() === statusFilter;
+  });
 
   return (
     <div className="space-y-6 max-w-6xl">
@@ -1061,7 +1303,7 @@ const GalleryView: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-[#183153] tracking-tight">Gallery Photographs CMS</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Manage photographs featured in the floating 3D orbital constellation and chronological wall.
+            Manage photographs featured in the floating 3D orbital constellation, public gallery, and homepage.
           </p>
         </div>
         <button
@@ -1073,64 +1315,183 @@ const GalleryView: React.FC = () => {
         </button>
       </div>
 
+      {/* Action Feedback Banner */}
+      {actionFeedback && (
+        <div
+          role="alert"
+          className={`p-4 rounded-xl border flex items-center justify-between gap-3 text-xs font-medium animate-fadeIn ${
+            actionFeedback.type === 'success'
+              ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+              : 'bg-red-50 text-red-900 border-red-200'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            {actionFeedback.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+            )}
+            <span>{actionFeedback.message}</span>
+          </div>
+          <button
+            onClick={() => setActionFeedback(null)}
+            className="text-slate-400 hover:text-slate-700 p-1"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Status Filter Tabs */}
+      <div className="flex items-center gap-2 border-b border-[#CFE3F0] pb-2">
+        <button
+          type="button"
+          onClick={() => setStatusFilter('all')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            statusFilter === 'all'
+              ? 'bg-[#183153] text-white shadow-xs'
+              : 'text-slate-600 hover:bg-[#EAF6FC] hover:text-[#183153]'
+          }`}
+        >
+          All ({photos.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setStatusFilter('published')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            statusFilter === 'published'
+              ? 'bg-[#159E9A] text-white shadow-xs'
+              : 'text-slate-600 hover:bg-[#EAF6FC] hover:text-[#183153]'
+          }`}
+        >
+          Published ({photos.filter((p) => p.publicationStatus === 'published').length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setStatusFilter('archived')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            statusFilter === 'archived'
+              ? 'bg-slate-700 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-[#EAF6FC] hover:text-[#183153]'
+          }`}
+        >
+          Archived Items ({photos.filter((p) => p.publicationStatus === 'archived').length})
+        </button>
+      </div>
+
       {loading ? (
         <div className="py-20 flex justify-center">
           <div className="w-8 h-8 border-3 border-[#159E9A] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {photos.map((photo) => (
-            <div key={photo.id} className="bg-[#F4FAFD] rounded-2xl border border-[#CFE3F0] overflow-hidden shadow-sm flex flex-col group hover:border-[#159E9A] transition-all">
-              <div className="h-44 bg-slate-100 overflow-hidden relative">
-                <img
-                  src={photo.imageUrl}
-                  alt={photo.title}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.opacity = '0.3';
-                  }}
-                />
-                <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded text-[10px] font-bold bg-[#EAF5FB]/95 text-[#183153] border border-[#CFE3F0] shadow-xs">
-                  {photo.category}
-                </span>
-                {photo.featuredIn3D && (
-                  <span className="absolute bottom-2.5 left-2.5 px-2 py-0.5 rounded text-[9px] font-bold bg-[#239B70] text-white shadow-xs">
-                    Featured in 3D Wall
-                  </span>
-                )}
-              </div>
-              <div className="p-4 flex-1 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-sm text-[#183153] truncate">{photo.title}</h3>
-                    <span className="text-[10px] font-mono text-slate-400">Order: {photo.displayOrder}</span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1 line-clamp-2">{photo.caption}</p>
-                </div>
-                <div className="pt-3 mt-3 border-t border-[#D7E7F0] flex items-center justify-between text-xs">
-                  <span className="text-slate-400 font-mono text-[11px]">{photo.date}</span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => openEditPhotoModal(photo)}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-[#159E9A] hover:bg-[#EAF6FC] transition-colors"
-                      title="Edit photo"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(photo.id)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                      title="Delete photo"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
+          {filteredPhotos.length === 0 ? (
+            <div className="col-span-full py-12 text-center text-slate-400 text-xs">
+              No photographs found matching "{statusFilter}".
             </div>
-          ))}
+          ) : (
+            filteredPhotos.map((photo) => {
+              const isArchived = photo.publicationStatus === 'archived';
+              return (
+                <div key={photo.id} className="bg-[#F4FAFD] rounded-2xl border border-[#CFE3F0] overflow-hidden shadow-sm flex flex-col group hover:border-[#159E9A] transition-all">
+                  <div className="h-44 bg-slate-100 overflow-hidden relative">
+                    <img
+                      src={photo.imageUrl}
+                      alt={photo.title}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.opacity = '0.3';
+                      }}
+                    />
+                    <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#EAF5FB]/95 text-[#183153] border border-[#CFE3F0] shadow-xs">
+                        {photo.category}
+                      </span>
+                      {isArchived && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-700 text-white shadow-xs">
+                          Archived
+                        </span>
+                      )}
+                    </div>
+                    {photo.featuredIn3D && (
+                      <span className="absolute bottom-2.5 left-2.5 px-2 py-0.5 rounded text-[9px] font-bold bg-[#239B70] text-white shadow-xs">
+                        Featured in 3D Wall
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-4 flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-bold text-sm text-[#183153] truncate">{photo.title}</h3>
+                        <span className="text-[10px] font-mono text-slate-400">Order: {photo.displayOrder}</span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1 line-clamp-2">{photo.caption}</p>
+                    </div>
+                    <div className="pt-3 mt-3 border-t border-[#D7E7F0] flex items-center justify-between text-xs">
+                      <span className="text-slate-400 font-mono text-[11px]">{photo.date}</span>
+                      <div className="flex items-center gap-1.5">
+                        {!isArchived ? (
+                          <>
+                            <button
+                              onClick={() => openEditPhotoModal(photo)}
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-[#159E9A] hover:bg-[#EAF6FC] transition-colors"
+                              title="Edit photo"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleArchive(photo)}
+                              className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 transition-colors"
+                              title="Archive (Hide from public, preserve file)"
+                            >
+                              <Archive className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setPermanentDeleteTarget(photo)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                              title="Delete permanently from database"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleRestore(photo)}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors text-[11px] font-semibold"
+                              title="Restore to published"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              <span>Restore</span>
+                            </button>
+                            <button
+                              onClick={() => setPermanentDeleteTarget(photo)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                              title="Delete permanently from database"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       )}
+
+      {/* Permanent Delete Confirmation Modal */}
+      <PermanentDeleteModal
+        isOpen={!!permanentDeleteTarget}
+        title={permanentDeleteTarget?.title || ''}
+        itemType="gallery photograph"
+        onClose={() => setPermanentDeleteTarget(null)}
+        onConfirm={handlePermanentDelete}
+        isDeleting={isDeleting}
+      />
 
       {/* Add / Edit Photograph Modal */}
       {isModalOpen && (

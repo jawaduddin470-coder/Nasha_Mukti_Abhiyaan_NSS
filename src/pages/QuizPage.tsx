@@ -21,6 +21,7 @@ export const QuizPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadQuiz = async () => {
@@ -55,6 +56,7 @@ export const QuizPage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
+      setSubmitError(null);
       const computedResult = await quizService.submitQuizAttempt(
         quiz,
         participant,
@@ -64,7 +66,7 @@ export const QuizPage: React.FC = () => {
       setStep('results');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      setError('An error occurred during score calculation. Please try again.');
+      setSubmitError('An error occurred during score calculation. Please review your answers and retry submission.');
     } finally {
       setIsSubmitting(false);
     }
@@ -133,12 +135,30 @@ export const QuizPage: React.FC = () => {
             )}
 
             {step === 'quiz' && participant && (
-              <QuizPlayer
-                quiz={quiz}
-                participant={participant}
-                onSubmit={handleSubmitQuiz}
-                isSubmitting={isSubmitting}
-              />
+              <div className="space-y-4">
+                {submitError && (
+                  <div className="max-w-3xl mx-auto p-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-xs sm:text-sm text-red-700 dark:text-red-300 flex items-center justify-between gap-3 animate-fadeIn">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
+                      <span>{submitError}</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSubmitError(null)}
+                      className="border-red-300 text-red-700 hover:bg-red-100"
+                    >
+                      Dismiss
+                    </Button>
+                  </div>
+                )}
+                <QuizPlayer
+                  quiz={quiz}
+                  participant={participant}
+                  onSubmit={handleSubmitQuiz}
+                  isSubmitting={isSubmitting}
+                />
+              </div>
             )}
 
             {step === 'results' && result && (

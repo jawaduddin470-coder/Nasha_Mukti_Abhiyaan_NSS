@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
-import { Menu, Phone, ExternalLink, Heart, Sun, Moon } from 'lucide-react';
+import { Menu, Phone, ExternalLink, Heart, Sun, Moon, Film } from 'lucide-react';
 import { NavItem } from '../../types/navigation';
 import { MobileNav } from './MobileNav';
 import { Button } from '../common/Button';
 import { useTheme } from '../../context/ThemeContext';
+import { useIntro } from '../../context/IntroContext';
 
 export const NAV_ITEMS: NavItem[] = [
   { name: 'Home', href: '/' },
@@ -19,6 +20,7 @@ export const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { playIntro } = useIntro();
   const location = useLocation();
 
   // Scroll detection for dynamic sticky header compression
@@ -163,7 +165,19 @@ export const Header: React.FC = () => {
             <span className="text-[11px] font-mono font-bold text-[#183153] dark:text-white">14446</span>
           </a>
 
-          {/* 3. Global Theme Toggle */}
+          {/* 3. Replay Intro Button (Signature Experience) */}
+          <button
+            type="button"
+            onClick={playIntro}
+            className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#CFE3F0] dark:border-[#243A5E] bg-[#EAF5FB]/90 dark:bg-[#14243D] text-[#183153] dark:text-slate-200 hover:text-[#0F8380] dark:hover:text-white hover:border-[#159E9A] hover:bg-[#DDF3F0] dark:hover:bg-[#172B48] transition-all duration-200 hover:scale-102 active:scale-98 shadow-2xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#159E9A]"
+            title="Replay Cinematic Campaign Journey"
+            aria-label="Replay Cinematic Campaign Journey"
+          >
+            <Film className="w-3.5 h-3.5 text-[#159E9A] group-hover:rotate-[-20deg] transition-transform duration-300" aria-hidden="true" />
+            <span className="text-xs font-semibold">Replay Intro</span>
+          </button>
+
+          {/* 4. Global Theme Toggle */}
           <button
             type="button"
             onClick={toggleTheme}
@@ -179,7 +193,7 @@ export const Header: React.FC = () => {
             )}
           </button>
 
-          {/* 4. Campaign Action */}
+          {/* 5. Campaign Action */}
           <Button
             to="/awareness"
             variant="teal"
@@ -192,7 +206,18 @@ export const Header: React.FC = () => {
         </div>
 
         {/* Mobile Hamburger & Theme Toggle Group */}
-        <div className="flex lg:hidden items-center gap-2">
+        <div className="flex lg:hidden items-center gap-1.5">
+          {/* Mobile Replay Intro Icon */}
+          <button
+            type="button"
+            onClick={playIntro}
+            className="p-2 rounded-xl border border-[#D7E7F0] dark:border-[#243A5E] text-[#159E9A] hover:bg-[#EAF6FC] dark:hover:bg-[#172B48] transition-colors"
+            title="Replay Cinematic Intro"
+            aria-label="Replay Cinematic Intro"
+          >
+            <Film className="w-4 h-4" aria-hidden="true" />
+          </button>
+
           <button
             type="button"
             onClick={toggleTheme}

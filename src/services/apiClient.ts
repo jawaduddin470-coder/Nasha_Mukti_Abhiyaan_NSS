@@ -33,17 +33,27 @@ export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+  // Ensure GET requests always bypass stale browser cache
+  const isGet = !options.method || options.method.toUpperCase() === 'GET';
+  let finalEndpoint = endpoint;
+  if (isGet) {
+    const separator = finalEndpoint.includes('?') ? '&' : '?';
+    finalEndpoint = `${finalEndpoint}${separator}_t=${Date.now()}`;
+  }
+
+  const url = finalEndpoint.startsWith('http') ? finalEndpoint : `${API_BASE_URL}${finalEndpoint}`;
   const authHeaders = await getAuthHeader();
 
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+    ...(isGet ? { 'Cache-Control': 'no-cache, no-store, must-revalidate', Pragma: 'no-cache' } : {}),
     ...authHeaders,
     ...((options.headers as Record<string, string>) || {}),
   };
 
   const response = await fetch(url, {
+    cache: isGet ? 'no-store' : 'default',
     ...options,
     headers,
   });

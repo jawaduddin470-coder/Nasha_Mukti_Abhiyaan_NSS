@@ -25,8 +25,15 @@
     position: relative;
     background-color: var(--color-surface-base);
     color: var(--color-text-headline);
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    letter-spacing: -0.011em;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, .font-serif {
+    font-family: 'Playfair Display', Georgia, serif;
+    letter-spacing: -0.022em;
   }
 
   /* Accessible focus indicators with calm teal */

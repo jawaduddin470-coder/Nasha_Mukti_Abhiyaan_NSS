@@ -17,7 +17,7 @@ import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import { Card } from '../common/Card';
 import { QuizResult } from '../../types/quiz';
-import { QUIZ_CATEGORY_METADATA } from '../../data/quizData';
+import { getQuizCategoryMeta } from '../../data/quizData';
 import { useTheme } from '../../context/ThemeContext';
 import { quizService, PostQuizAwarenessMessage } from '../../services/quizService';
 
@@ -176,7 +176,7 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
         <div className="space-y-3">
           {result.questionBreakdown.map((item, idx) => {
             const isExpanded = expandedQuestions[item.questionId] ?? true; // expanded by default for educational review
-            const catMeta = QUIZ_CATEGORY_METADATA[item.category];
+            const catMeta = getQuizCategoryMeta(item.category);
 
             return (
               <div

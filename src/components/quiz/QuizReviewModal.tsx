@@ -67,15 +67,15 @@ export const QuizReviewModal: React.FC<QuizReviewModalProps> = ({
       >
         <div>
           {/* Header */}
-          <div className="flex items-center justify-between pb-4 border-b border-ivory-200 dark:border-darkSurface-border">
+          <div className="flex items-center justify-between pb-4 border-b border-[#CFE3F0] dark:border-[#243A5E]">
             <div>
               <h3
                 id="review-modal-title"
-                className="font-serif text-xl sm:text-2xl font-bold"
+                className="font-serif text-xl sm:text-2xl font-bold text-[#183153] dark:text-white"
               >
                 Submission Review
               </h3>
-              <p className="text-xs sm:text-sm text-charcoal-500 dark:text-charcoal-400 mt-0.5">
+              <p className="text-xs sm:text-sm text-[#334C73] dark:text-slate-300 mt-0.5">
                 Review your responses before finalizing evaluation.
               </p>
             </div>
@@ -83,7 +83,7 @@ export const QuizReviewModal: React.FC<QuizReviewModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg text-charcoal-400 hover:text-charcoal-700 dark:hover:text-charcoal-200 hover:bg-ivory-100 dark:hover:bg-darkSurface-elevated transition-colors"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-[#183153] dark:hover:text-white hover:bg-[#DDF3F0] dark:hover:bg-[#1B2F4E] transition-colors"
               aria-label="Close review dialog"
             >
               <X className="w-5 h-5" />
@@ -93,8 +93,8 @@ export const QuizReviewModal: React.FC<QuizReviewModalProps> = ({
           {/* Status Alert Banner */}
           <div className="mt-4">
             {isAllAnswered ? (
-              <div className="p-3.5 rounded-xl bg-nssGreen-50 dark:bg-nssGreen-950/40 border border-nssGreen-200 dark:border-nssGreen-800 text-xs text-nssGreen-800 dark:text-nssGreen-200 flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-nssGreen-600 dark:text-nssGreen-400 shrink-0" />
+              <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-200 flex items-center gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span className="font-medium">
                   All {totalQuestions} questions have been answered. You are ready to complete your submission!
                 </span>
@@ -122,21 +122,21 @@ export const QuizReviewModal: React.FC<QuizReviewModalProps> = ({
                     onSelectQuestion(idx);
                     onClose();
                   }}
-                  className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all hover:border-saffron-500/60 ${
+                  className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all hover:border-[#159E9A] ${
                     isAnswered
                       ? isDark
-                        ? 'bg-darkSurface-elevated/70 border-darkSurface-border'
-                        : 'bg-ivory-50/80 border-ivory-200'
+                        ? 'bg-[#1B2F4E]/80 border-[#243A5E]'
+                        : 'bg-white/80 border-[#CFE3F0]'
                       : isDark
                       ? 'bg-amber-950/20 border-amber-900/50'
                       : 'bg-amber-50/70 border-amber-200'
                   }`}
                 >
                   <div className="flex items-center gap-3 overflow-hidden">
-                    <span className="font-mono text-xs font-bold text-charcoal-400 dark:text-charcoal-500 shrink-0">
+                    <span className="font-mono text-xs font-bold text-slate-400 dark:text-slate-500 shrink-0">
                       #{idx + 1}
                     </span>
-                    <p className="text-xs truncate font-medium text-charcoal-800 dark:text-charcoal-200">
+                    <p className="text-xs truncate font-medium text-[#183153] dark:text-slate-200">
                       {q.text}
                     </p>
                   </div>
@@ -159,14 +159,14 @@ export const QuizReviewModal: React.FC<QuizReviewModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="mt-6 pt-4 border-t border-ivory-200 dark:border-darkSurface-border flex items-center justify-between gap-3">
+        <div className="mt-6 pt-4 border-t border-[#CFE3F0] dark:border-[#243A5E] flex items-center justify-between gap-3">
           <Button type="button" variant="outline" size="md" onClick={onClose}>
             Back to Question
           </Button>
 
           <Button
             type="button"
-            variant="primary"
+            variant="teal"
             size="md"
             onClick={onSubmitQuiz}
             disabled={isSubmitting}

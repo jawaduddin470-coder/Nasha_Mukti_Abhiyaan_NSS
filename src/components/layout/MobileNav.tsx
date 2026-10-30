@@ -1,9 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { X, Phone, HeartHandshake, ShieldCheck, ExternalLink, Sun, Moon } from 'lucide-react';
+import { X, Phone, HeartHandshake, ShieldCheck, ExternalLink, Sun, Moon, Film } from 'lucide-react';
 import { NavItem } from '../../types/navigation';
 import { Button } from '../common/Button';
 import { useTheme } from '../../context/ThemeContext';
+import { useIntro } from '../../context/IntroContext';
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const { theme, toggleTheme } = useTheme();
+  const { playIntro } = useIntro();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -134,8 +136,28 @@ export const MobileNav: React.FC<MobileNavProps> = ({
             ))}
           </nav>
 
+          {/* Replay Cinematic Intro Mobile Action */}
+          <div className="mt-4 pt-3 border-t border-[#D7E7F0] dark:border-[#243A5E]">
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                playIntro();
+              }}
+              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-[#CFE3F0] dark:border-[#243A5E] bg-[#DCEBF5]/80 dark:bg-[#14243D] text-[#183153] dark:text-slate-200 hover:border-[#159E9A] transition-colors"
+            >
+              <span className="inline-flex items-center gap-2 text-xs font-semibold">
+                <Film className="w-4 h-4 text-[#159E9A]" aria-hidden="true" />
+                <span>Replay Cinematic Intro</span>
+              </span>
+              <span className="text-[10px] font-mono font-bold text-[#159E9A] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#159E9A]/15">
+                16.8s
+              </span>
+            </button>
+          </div>
+
           {/* NSS MJCET Institutional Link */}
-          <div className="mt-5 pt-4 border-t border-[#D7E7F0] dark:border-[#243A5E]">
+          <div className="mt-3">
             <a
               href="https://www.nssmjcet.in"
               target="_blank"

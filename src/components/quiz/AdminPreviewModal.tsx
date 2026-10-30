@@ -9,7 +9,7 @@ import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import { Quiz, AdminQuizStats } from '../../types/quiz';
 import { quizService } from '../../services/quizService';
-import { QUIZ_CATEGORY_METADATA } from '../../data/quizData';
+import { getQuizCategoryMeta } from '../../data/quizData';
 import { useTheme } from '../../context/ThemeContext';
 
 interface AdminPreviewModalProps {
@@ -175,7 +175,7 @@ export const AdminPreviewModal: React.FC<AdminPreviewModalProps> = ({
             {activeTab === 'questions' && (
               <div className="space-y-2.5">
                 {quiz.questions.map((q, idx) => {
-                  const cat = QUIZ_CATEGORY_METADATA[q.category];
+                  const cat = getQuizCategoryMeta(q.category);
                   return (
                     <div
                       key={q.id}
@@ -234,7 +234,7 @@ export const AdminPreviewModal: React.FC<AdminPreviewModalProps> = ({
                     {Object.entries(stats.categoryBreakdown).map(([catKey, val]) => (
                       <div key={catKey} className="flex items-center justify-between text-xs">
                         <span className="text-charcoal-600 dark:text-charcoal-400">
-                          {QUIZ_CATEGORY_METADATA[catKey as keyof typeof QUIZ_CATEGORY_METADATA]?.label}
+                          {getQuizCategoryMeta(catKey).label}
                         </span>
                         <span className="font-mono font-bold">{val.averagePercentage}%</span>
                       </div>

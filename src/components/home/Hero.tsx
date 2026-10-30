@@ -1,16 +1,15 @@
 import React from 'react';
-import { ChevronRight, Calendar, PhoneCall, ShieldCheck, HeartPulse, Compass, Film } from 'lucide-react';
+import { ChevronRight, Calendar, PhoneCall, ShieldCheck, HeartPulse, Compass } from 'lucide-react';
 import { Container } from '../common/Container';
 import { Button } from '../common/Button';
-import { HeroScene } from '../3d/HeroScene';
 import { AtmosphericBackground } from '../common/AtmosphericBackground';
 import { ScrollReveal } from '../common/ScrollReveal';
 
 interface HeroProps {
-  onReplayIntro?: () => void;
+  className?: string;
 }
 
-export const Hero: React.FC<HeroProps> = ({ onReplayIntro }) => {
+export const Hero: React.FC<HeroProps> = () => {
   return (
     <section className="relative pt-6 pb-16 sm:pt-12 sm:pb-24 overflow-hidden" aria-labelledby="hero-heading">
       {/* Dynamic Layered Atmospheric Background with Flowing Ribbons & Institutional Watermark */}
@@ -49,13 +48,13 @@ export const Hero: React.FC<HeroProps> = ({ onReplayIntro }) => {
               {/* Call To Actions */}
               <div className="mt-7 flex flex-wrap items-center gap-3 w-full sm:w-auto">
                 <Button
-                  to="/awareness"
+                  href="#campaign-journey"
                   variant="teal"
                   size="lg"
                   className="w-full sm:w-auto"
                   rightIcon={<ChevronRight className="w-4 h-4" aria-hidden="true" />}
                 >
-                  Explore Awareness Journey
+                  Explore Campaign Journey
                 </Button>
 
                 <Button
@@ -67,18 +66,6 @@ export const Hero: React.FC<HeroProps> = ({ onReplayIntro }) => {
                 >
                   Campus Activities
                 </Button>
-
-                {onReplayIntro && (
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={onReplayIntro}
-                    className="w-full sm:w-auto bg-[#EAF5FB]/90 dark:bg-[#14243D] dark:text-slate-200 border-[#CFE3F0] dark:border-[#243A5E]"
-                    leftIcon={<Film className="w-4 h-4 text-[#4F8FE8]" aria-hidden="true" />}
-                  >
-                    Replay Journey
-                  </Button>
-                )}
 
                 <Button
                   to="/support"
@@ -111,9 +98,9 @@ export const Hero: React.FC<HeroProps> = ({ onReplayIntro }) => {
             </ScrollReveal>
           </div>
 
-          {/* Right Column: Real Interactive 3D World */}
+          {/* Right Column: Editorial Campaign Visual Anchor (Zero 3D, Pure Institutional Caliber) */}
           <div className="lg:col-span-6 w-full relative">
-            {/* Soft Ambient Spotlight Glow Behind 3D Sanctuary */}
+            {/* Soft Ambient Spotlight Glow Behind Editorial Visual */}
             <div
               className="absolute -inset-4 sm:-inset-8 rounded-3xl blur-2xl opacity-65 dark:opacity-35 pointer-events-none -z-10"
               style={{
@@ -121,7 +108,104 @@ export const Hero: React.FC<HeroProps> = ({ onReplayIntro }) => {
                   'radial-gradient(ellipse at center, rgba(185, 221, 245, 0.65) 0%, rgba(21, 158, 154, 0.15) 45%, transparent 75%)',
               }}
             />
-            <HeroScene onReplayIntro={onReplayIntro} />
+
+            <ScrollReveal direction="up" delayMs={60}>
+              <div className="relative rounded-3xl p-3 sm:p-4 bg-gradient-to-b from-[#EBF5FB]/90 via-[#F3F9FD]/80 to-[#E1EEF6]/90 dark:from-[#14243D] dark:via-[#101D33] dark:to-[#0D1829] border border-[#CFE3F0] dark:border-[#243A5E] shadow-elevated overflow-hidden group">
+                {/* Main Featured Editorial Photography Frame */}
+                <div className="relative rounded-2xl overflow-hidden aspect-[4/3] sm:aspect-[16/10] border border-[#BDE5DF]/60 dark:border-[#1E434D]">
+                  <img
+                    src="/assets/campaign/pillar-02-campus-action.jpg"
+                    alt="NSS MJCET student advocates participating in campaign outreach"
+                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
+                    loading="eager"
+                  />
+                  {/* Subtle Gradient Vignette */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0E1D33]/85 via-[#0E1D33]/25 to-transparent pointer-events-none" />
+
+                  {/* Top Floating Badges */}
+                  <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0E1D33]/85 backdrop-blur-md border border-white/20 text-xs font-semibold text-[#5EEAD4] shadow-xs">
+                      <span className="w-2 h-2 rounded-full bg-[#159E9A] animate-pulse" aria-hidden="true" />
+                      NSS MJCET &bull; Active Unit
+                    </span>
+
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/15 text-[11px] text-slate-200">
+                      Chapter 2024–25
+                    </span>
+                  </div>
+
+                  {/* Inset Bottom Editorial Card */}
+                  <div className="absolute bottom-3 left-3 right-3 p-3.5 sm:p-4 rounded-xl bg-[#0E1D33]/90 backdrop-blur-md border border-white/15 text-white shadow-lg">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-[10px] sm:text-xs font-mono font-bold text-[#5EEAD4] uppercase tracking-wider">
+                        From Awareness to Action
+                      </span>
+                      <a
+                        href="#campaign-journey"
+                        className="text-[11px] font-semibold text-slate-300 hover:text-white inline-flex items-center gap-1 transition-colors group/link"
+                      >
+                        <span>Explore Journey</span>
+                        <ChevronRight className="w-3.5 h-3.5 group-hover/link:translate-x-0.5 transition-transform" />
+                      </a>
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-200 font-serif italic line-clamp-1 sm:line-clamp-none">
+                      &ldquo;Four pillars. One collective mission. A healthier tomorrow.&rdquo;
+                    </p>
+                  </div>
+                </div>
+
+                {/* Bottom Quick-Action Mini Grid Linking to the 4 Pillars */}
+                <div className="mt-3.5 pt-3 border-t border-[#CFE3F0] dark:border-[#243A5E] grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <a
+                    href="#pillar-01"
+                    className="p-2 rounded-xl bg-white/60 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-transparent hover:border-[#159E9A] text-left transition-all group/item"
+                  >
+                    <span className="block text-[10px] font-mono font-bold text-[#159E9A] dark:text-[#5EEAD4]">
+                      01 &bull; Awareness
+                    </span>
+                    <span className="block text-xs font-semibold text-[#183153] dark:text-white truncate">
+                      Neuroscience
+                    </span>
+                  </a>
+
+                  <a
+                    href="#pillar-02"
+                    className="p-2 rounded-xl bg-white/60 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-transparent hover:border-[#D97706] text-left transition-all group/item"
+                  >
+                    <span className="block text-[10px] font-mono font-bold text-[#D97706] dark:text-[#FBBF24]">
+                      02 &bull; Action
+                    </span>
+                    <span className="block text-xs font-semibold text-[#183153] dark:text-white truncate">
+                      Campus Drives
+                    </span>
+                  </a>
+
+                  <a
+                    href="#pillar-03"
+                    className="p-2 rounded-xl bg-white/60 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-transparent hover:border-[#239B70] text-left transition-all group/item"
+                  >
+                    <span className="block text-[10px] font-mono font-bold text-[#239B70] dark:text-[#34D399]">
+                      03 &bull; Solidarity
+                    </span>
+                    <span className="block text-xs font-semibold text-[#183153] dark:text-white truncate">
+                      Peer Circle
+                    </span>
+                  </a>
+
+                  <a
+                    href="#pillar-04"
+                    className="p-2 rounded-xl bg-white/60 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-transparent hover:border-[#4F8FE8] text-left transition-all group/item"
+                  >
+                    <span className="block text-[10px] font-mono font-bold text-[#4F8FE8] dark:text-[#95C2FA]">
+                      04 &bull; Lifeline
+                    </span>
+                    <span className="block text-xs font-semibold text-[#183153] dark:text-white truncate">
+                      24/7 Helplines
+                    </span>
+                  </a>
+                </div>
+              </div>
+            </ScrollReveal>
           </div>
         </div>
 

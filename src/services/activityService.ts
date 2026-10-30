@@ -14,6 +14,24 @@ import {
   ActivityStats,
 } from '../types/activity';
 import { apiClient } from './apiClient';
+import { resolveMediaUrl } from '../utils/mediaHelper';
+
+function sanitizeActivity(act: Activity): Activity {
+  return {
+    ...act,
+    coverImage: resolveMediaUrl(act.coverImage),
+    galleryImages: (act.galleryImages || []).map((img: any) => {
+      if (typeof img === 'string') return resolveMediaUrl(img);
+      if (img && typeof img === 'object' && typeof img.url === 'string') {
+        return {
+          ...img,
+          url: resolveMediaUrl(img.url),
+        };
+      }
+      return img;
+    }) as any,
+  };
+}
 
 export const activityService = {
   /**
@@ -29,14 +47,14 @@ export const activityService = {
 
       const qs = params.toString() ? `?${params.toString()}` : '';
       const data = await apiClient.get<Activity[]>(`/activities${qs}`);
-      if (Array.isArray(data) && data.length > 0) {
-        return data;
+      if (Array.isArray(data)) {
+        return data.map(sanitizeActivity);
       }
     } catch (e) {
       console.warn('Backend activity fetch failed, using local dataset fallback:', e);
     }
 
-    // Local curated fallback
+    // Local curated fallback (only used if backend is genuinely offline)
     let results = CAMPAIGN_ACTIVITIES.filter(
       (item) => item.publicationStatus === 'published'
     );
@@ -77,12 +95,12 @@ export const activityService = {
   async getActivityBySlug(slug: string): Promise<Activity | null> {
     try {
       const data = await apiClient.get<Activity>(`/activities/${encodeURIComponent(slug)}`);
-      if (data && data.id) return data;
+      if (data && data.id) return sanitizeActivity(data);
     } catch {
       // fallback
     }
     const found = CAMPAIGN_ACTIVITIES.find((item) => item.slug === slug);
-    return found || null;
+    return found ? sanitizeActivity(found) : null;
   },
 
   /**
@@ -119,5 +137,38 @@ export const activityService = {
 
   async getStats(): Promise<ActivityStats> {
     return this.getActivityStats();
+  },
+
+  /**
+   * Archives an activity, removing it from public view while preserving record.
+   */
+  async archiveActivity(id: string): Promise<any> {
+    const res = await apiClient.post(`/admin/activities/${id}/archive`);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('nmba_cms_updated', { detail: { type: 'activities' } }));
+    }
+    return res;
+  },
+
+  /**
+   * Restores an archived activity back to published status.
+   */
+  async restoreActivity(id: string): Promise<any> {
+    const res = await apiClient.post(`/admin/activities/${id}/restore`);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('nmba_cms_updated', { detail: { type: 'activities' } }));
+    }
+    return res;
+  },
+
+  /**
+   * Permanently deletes an activity from MongoDB after confirmation.
+   */
+  async deleteActivityPermanently(id: string): Promise<any> {
+    const res = await apiClient.delete(`/admin/activities/${id}?permanent=true&hard_delete=true`);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('nmba_cms_updated', { detail: { type: 'activities' } }));
+    }
+    return res;
   },
 };

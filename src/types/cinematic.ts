@@ -1,108 +1,79 @@
-export interface StoryCardBeat {
+export interface CinematicChapter {
   id: string;
-  label: string;
-  chapter: string;
-  badge: string;
+  chapterNumber: string;
+  title: string;
+  theme: string;
   headline: string;
-  narrative: string;
+  supportingText: string;
+  imageSrc: string;
   startTime: number; // in seconds
   duration: number;  // in seconds
-  motif: 'spark' | 'crossroads' | 'aperture' | 'shield' | 'emblem';
   accentColor: string;
-  // Optional 3D camera properties for spatial continuity
-  cameraPos?: [number, number, number];
-  targetPos?: [number, number, number];
-  lightIntensity?: number;
-  lightColor?: string;
-  fogDensity?: number;
+  lightSweepColor: string;
+  cameraDirection: 'push-in' | 'pan-tilt' | 'focus-dolly' | 'pull-back';
 }
 
-export const CINEMATIC_BEATS: StoryCardBeat[] = [
+export const CINEMATIC_CHAPTERS: CinematicChapter[] = [
   {
-    id: 'possibility',
-    label: 'Possibility',
-    chapter: 'CHAPTER 01 / 05',
-    badge: 'POSSIBILITY',
-    headline: 'Every future begins with a choice.',
-    narrative: 'A blank horizon of boundless potential. The quiet power to determine your path starts with a single conscious decision.',
+    id: 'reality',
+    chapterNumber: '01',
+    title: 'THE REALITY',
+    theme: 'The problem often begins silently.',
+    headline: 'Every journey has a beginning. Not every beginning is visible.',
+    supportingText: 'Sometimes, the greatest challenges begin in silence.',
+    imageSrc: '/assets/intro/chapter-01-the-reality.jpg',
     startTime: 0,
-    duration: 2.8,
-    motif: 'spark',
-    accentColor: '#38BDF8', // Cyan sky
-    cameraPos: [0, 4.2, 7.8],
-    targetPos: [0, -0.4, 0],
-    lightIntensity: 1.0,
-    lightColor: '#FFF8EB',
-    fogDensity: 0.04,
-  },
-  {
-    id: 'pressure',
-    label: 'Pressure',
-    chapter: 'CHAPTER 02 / 05',
-    badge: 'PRESSURE',
-    headline: 'Not every path leads where you belong.',
-    narrative: 'Collegiate stress, unspoken expectations, and deceptive shortcuts. True resilience is recognizing the trap before taking the step.',
-    startTime: 2.8,
-    duration: 3.0,
-    motif: 'crossroads',
-    accentColor: '#F97316', // Saffron warning
-    cameraPos: [-2.4, 1.8, 3.6],
-    targetPos: [-1.2, 0.2, -0.4],
-    lightIntensity: 0.7,
-    lightColor: '#CBD5E1',
-    fogDensity: 0.08,
+    duration: 4.0,
+    accentColor: '#38BDF8', // Ice Blue / Sky
+    lightSweepColor: 'rgba(56, 189, 248, 0.22)',
+    cameraDirection: 'push-in',
   },
   {
     id: 'awareness',
-    label: 'Awareness',
-    chapter: 'CHAPTER 03 / 05',
-    badge: 'AWARENESS',
-    headline: 'Pause. Understand. Choose.',
-    narrative: 'Clarity is quiet power. Understanding the neurobiology of dependency replaces stigma with sovereign health.',
-    startTime: 5.8,
-    duration: 3.0,
-    motif: 'aperture',
-    accentColor: '#FBBF24', // Amber illumination
-    cameraPos: [-0.6, 2.0, 4.4],
-    targetPos: [0.2, 0.4, 0],
-    lightIntensity: 1.35,
-    lightColor: '#FEF3C7',
-    fogDensity: 0.03,
+    chapterNumber: '02',
+    title: 'THE AWARENESS',
+    theme: 'Understanding changes perspectives.',
+    headline: 'Awareness is where change begins.',
+    supportingText: 'Knowledge replaces misconceptions. Understanding replaces stigma.',
+    imageSrc: '/assets/intro/chapter-02-the-awareness.jpg',
+    startTime: 4.0,
+    duration: 4.0,
+    accentColor: '#159E9A', // Misty Teal
+    lightSweepColor: 'rgba(21, 158, 154, 0.28)',
+    cameraDirection: 'pan-tilt',
   },
   {
-    id: 'community',
-    label: 'Community',
-    chapter: 'CHAPTER 04 / 05',
-    badge: 'COMMUNITY',
-    headline: 'Asking for help is strength.',
-    narrative: 'You never walk alone. Accredited psychological counselors, peer mentors, and confidential campus circles walk with you.',
-    startTime: 8.8,
-    duration: 3.0,
-    motif: 'shield',
-    accentColor: '#34D399', // Vitality emerald
-    cameraPos: [1.6, 1.5, 4.8],
-    targetPos: [0.8, 0.5, -0.4],
-    lightIntensity: 1.4,
-    lightColor: '#FFFFFF',
-    fogDensity: 0.02,
+    id: 'action',
+    chapterNumber: '03',
+    title: 'THE ACTION',
+    theme: 'Change requires collective action.',
+    headline: 'One decision can inspire a movement.',
+    supportingText: 'Speak up. Support one another. Build a community that chooses wellbeing.',
+    imageSrc: '/assets/intro/chapter-03-the-action.jpg',
+    startTime: 8.0,
+    duration: 4.0,
+    accentColor: '#10B981', // Soft Emerald
+    lightSweepColor: 'rgba(16, 185, 129, 0.28)',
+    cameraDirection: 'focus-dolly',
   },
   {
-    id: 'future',
-    label: 'The Future',
-    chapter: 'NSS MJCET PRESENTS',
-    badge: 'THE FUTURE',
-    headline: 'Every choice shapes a future.',
-    narrative: 'Awareness. Resilience. Compassion.',
-    startTime: 11.8,
-    duration: 3.2,
-    motif: 'emblem',
-    accentColor: '#EA580C', // Institutional NSS saffron
-    cameraPos: [0, 0.6, 5.4],
-    targetPos: [0, 0, 0],
-    lightIntensity: 1.2,
-    lightColor: '#FFF7ED',
-    fogDensity: 0.02,
+    id: 'tomorrow',
+    chapterNumber: '04',
+    title: 'A BRIGHTER TOMORROW',
+    theme: 'A healthier individual. A stronger community.',
+    headline: 'A Healthier You. A Stronger Tomorrow.',
+    supportingText: 'Together, we can build safer campuses, healthier communities and a drug-free future.',
+    imageSrc: '/assets/intro/chapter-04-a-brighter-tomorrow.jpg',
+    startTime: 12.0,
+    duration: 4.8,
+    accentColor: '#F59E0B', // Golden hour amber / subtle saffron
+    lightSweepColor: 'rgba(245, 158, 11, 0.32)',
+    cameraDirection: 'pull-back',
   },
 ];
 
-export const TOTAL_CINEMATIC_DURATION = 15.0; // in seconds
+export const TOTAL_CINEMATIC_DURATION = 16.8; // in seconds (calibrated to ~16.8s within 15–18s window)
+
+// Backward compatibility alias for legacy types if referenced
+export type StoryCardBeat = CinematicChapter;
+export const CINEMATIC_BEATS = CINEMATIC_CHAPTERS;

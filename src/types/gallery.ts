@@ -8,6 +8,12 @@
  */
 
 export type GalleryCategory =
+  | 'rallies'
+  | 'pledges'
+  | 'seminars'
+  | 'street-plays'
+  | 'workshops'
+  | 'counseling'
   | 'awareness_campaigns'
   | 'educational_outreach'
   | 'health_initiatives'

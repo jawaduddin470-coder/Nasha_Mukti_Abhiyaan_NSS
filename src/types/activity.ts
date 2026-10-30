@@ -7,6 +7,12 @@
  */
 
 export type ActivityCategory =
+  | 'rallies'
+  | 'pledges'
+  | 'seminars'
+  | 'street-plays'
+  | 'workshops'
+  | 'counseling'
   | 'awareness_drives'
   | 'educational_outreach'
   | 'health_initiatives'

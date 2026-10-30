@@ -133,20 +133,25 @@ export default {
       },
       fontFamily: {
         serif: [
-          'Fraunces',
-          'Playfair Display',
+          '"DM Serif Display"',
+          '"Playfair Display"',
           'Georgia',
           'Cambria',
           'serif',
         ],
         sans: [
-          'Plus Jakarta Sans',
-          'Inter',
+          '"Manrope"',
+          '"Plus Jakarta Sans"',
           '-apple-system',
           'BlinkMacSystemFont',
           'Segoe UI',
-          'Noto Sans',
           'sans-serif',
+        ],
+        heading: [
+          '"DM Serif Display"',
+          '"Playfair Display"',
+          'Georgia',
+          'serif',
         ],
       },
       boxShadow: {

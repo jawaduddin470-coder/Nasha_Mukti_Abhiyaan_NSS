@@ -12,7 +12,7 @@ import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import { Card } from '../common/Card';
 import { Quiz } from '../../types/quiz';
-import { QUIZ_CATEGORY_METADATA } from '../../data/quizData';
+import { QUIZ_CATEGORY_METADATA, getQuizCategoryMeta } from '../../data/quizData';
 import { useTheme } from '../../context/ThemeContext';
 
 interface QuizWelcomeProps {
@@ -146,7 +146,7 @@ export const QuizWelcome: React.FC<QuizWelcomeProps> = ({
       {/* Campaign Values & Learning Categories Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {categories.map((catKey) => {
-          const meta = QUIZ_CATEGORY_METADATA[catKey];
+          const meta = getQuizCategoryMeta(catKey);
           return (
             <div
               key={catKey}

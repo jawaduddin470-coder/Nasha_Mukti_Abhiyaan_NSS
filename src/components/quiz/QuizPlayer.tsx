@@ -11,7 +11,7 @@ import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import { Card } from '../common/Card';
 import { Quiz, ParticipantRegistration } from '../../types/quiz';
-import { QUIZ_CATEGORY_METADATA } from '../../data/quizData';
+import { getQuizCategoryMeta } from '../../data/quizData';
 import { QuizReviewModal } from './QuizReviewModal';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -44,21 +44,22 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  const totalQuestions = quiz.questions.length;
-  const currentQuestion = quiz.questions[currentIndex];
-  const meta = QUIZ_CATEGORY_METADATA[currentQuestion.category];
+  const totalQuestions = quiz?.questions?.length || 0;
+  const safeIndex = totalQuestions > 0 ? Math.max(0, Math.min(currentIndex, totalQuestions - 1)) : 0;
+  const currentQuestion = totalQuestions > 0 ? quiz.questions[safeIndex] : null;
+  const meta = getQuizCategoryMeta(currentQuestion?.category);
 
-  const currentSelectedIds = userAnswers[currentQuestion.id] || [];
+  const currentSelectedIds = (currentQuestion && userAnswers[currentQuestion.id]) || [];
   const isAnswered = currentSelectedIds.length > 0;
 
-  const answeredCount = quiz.questions.filter((q) => {
+  const answeredCount = quiz?.questions ? quiz.questions.filter((q) => {
     const a = userAnswers[q.id];
     return a && a.length > 0;
-  }).length;
+  }).length : 0;
 
-  const progressPercentage = Math.round(
-    ((currentIndex + 1) / totalQuestions) * 100
-  );
+  const progressPercentage = totalQuestions > 0
+    ? Math.round(((safeIndex + 1) / totalQuestions) * 100)
+    : 0;
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -67,6 +68,7 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
   };
 
   const handleSelectOption = (optionId: string) => {
+    if (!currentQuestion) return;
     if (currentQuestion.type === 'multiple') {
       const existing = currentSelectedIds;
       const next = existing.includes(optionId)
@@ -79,8 +81,8 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
   };
 
   const handleNext = () => {
-    if (currentIndex < totalQuestions - 1) {
-      setCurrentIndex((prev) => prev + 1);
+    if (safeIndex < totalQuestions - 1) {
+      setCurrentIndex(safeIndex + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       setIsReviewOpen(true);
@@ -88,11 +90,24 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
   };
 
   const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex((prev) => prev - 1);
+    if (safeIndex > 0) {
+      setCurrentIndex(safeIndex - 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
+
+  if (!currentQuestion || totalQuestions === 0) {
+    return (
+      <div className="max-w-3xl mx-auto p-12 text-center rounded-2xl border border-[#CFE3F0] dark:border-[#243A5E] bg-[#EAF5FB] dark:bg-[#14243D]">
+        <p className="text-base font-medium text-[#183153] dark:text-white">
+          No questions are available at this moment.
+        </p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          Please check back or contact the campaign coordinator.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-fadeIn">
@@ -100,7 +115,7 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl border bg-[#EAF5FB]/90 dark:bg-[#14243D] border-[#CFE3F0] dark:border-[#243A5E] shadow-2xs">
         <div className="flex items-center gap-2">
           <Badge variant="teal" size="sm">
-            Question {currentIndex + 1} of {totalQuestions}
+            Question {safeIndex + 1} of {totalQuestions}
           </Badge>
           <span
             className="text-xs font-semibold px-2 py-0.5 rounded-full"
@@ -155,7 +170,7 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
         className="flex items-center justify-between gap-1.5 overflow-x-auto pb-1 text-xs"
       >
         {quiz.questions.map((q, idx) => {
-          const isCurr = idx === currentIndex;
+          const isCurr = idx === safeIndex;
           const ans = userAnswers[q.id];
           const hasAns = ans && ans.length > 0;
 
@@ -266,14 +281,14 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
             variant="outline"
             size="md"
             onClick={handlePrevious}
-            disabled={currentIndex === 0}
+            disabled={safeIndex === 0}
             leftIcon={<ArrowLeft className="w-4 h-4" />}
           >
             Previous
           </Button>
 
           <div className="flex items-center gap-2">
-            {currentIndex < totalQuestions - 1 ? (
+            {safeIndex < totalQuestions - 1 ? (
               <Button
                 variant="teal"
                 size="md"

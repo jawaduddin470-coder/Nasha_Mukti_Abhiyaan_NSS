@@ -14,6 +14,15 @@ import {
   GalleryStats,
 } from '../types/gallery';
 import { apiClient } from './apiClient';
+import { resolveMediaUrl } from '../utils/mediaHelper';
+
+function sanitizeGalleryItem(item: GalleryItem): GalleryItem {
+  return {
+    ...item,
+    imageUrl: resolveMediaUrl(item.imageUrl),
+    thumbnailUrl: resolveMediaUrl(item.thumbnailUrl || item.imageUrl),
+  };
+}
 
 export interface GalleryPaginatedResponse {
   items: GalleryItem[];
@@ -35,8 +44,8 @@ export const galleryService = {
 
       const qs = params.toString() ? `?${params.toString()}` : '';
       const data = await apiClient.get<GalleryItem[]>(`/gallery${qs}`);
-      if (Array.isArray(data) && data.length > 0) {
-        return data;
+      if (Array.isArray(data)) {
+        return data.map(sanitizeGalleryItem);
       }
     } catch (e) {
       console.warn('Backend gallery fetch failed, using local fallback:', e);
@@ -126,5 +135,38 @@ export const galleryService = {
       drivesDocumented: 12,
       totalViews: 8500,
     };
+  },
+
+  /**
+   * Archives a gallery photo, removing it from public view while preserving record.
+   */
+  async archiveGalleryPhoto(id: string): Promise<any> {
+    const res = await apiClient.post(`/admin/gallery/${id}/archive`);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('nmba_cms_updated', { detail: { type: 'gallery' } }));
+    }
+    return res;
+  },
+
+  /**
+   * Restores an archived gallery photo back to published status.
+   */
+  async restoreGalleryPhoto(id: string): Promise<any> {
+    const res = await apiClient.post(`/admin/gallery/${id}/restore`);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('nmba_cms_updated', { detail: { type: 'gallery' } }));
+    }
+    return res;
+  },
+
+  /**
+   * Permanently deletes a gallery photo record from MongoDB after confirmation.
+   */
+  async deleteGalleryPhotoPermanently(id: string): Promise<any> {
+    const res = await apiClient.delete(`/admin/gallery/${id}?permanent=true&hard_delete=true`);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('nmba_cms_updated', { detail: { type: 'gallery' } }));
+    }
+    return res;
   },
 };

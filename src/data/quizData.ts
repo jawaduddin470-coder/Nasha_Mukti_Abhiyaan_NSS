@@ -16,6 +16,30 @@ export const QUIZ_CATEGORY_METADATA: Record<
     description: 'Dismantling widespread social misconceptions with evidence-based medicine.',
     accentColor: '#0284C7', // Sky Blue
   },
+  substance_facts: {
+    label: 'Substance Facts & Realities',
+    shortTag: 'Clinical Realities',
+    description: 'Evidence-based clinical perspectives on addiction, chemical tolerance, and health.',
+    accentColor: '#0284C7', // Sky Blue
+  },
+  health_impacts: {
+    label: 'Biological & Health Impacts',
+    shortTag: 'Health Science',
+    description: 'Clinical impacts on neuro-chemistry, cardiovascular systems, and somatic organs.',
+    accentColor: '#EA580C', // Saffron
+  },
+  legal_social: {
+    label: 'Legal & Institutional Policies',
+    shortTag: 'Legal & Campus Rules',
+    description: 'Institutional codes of conduct, NDPS laws, and student rights.',
+    accentColor: '#4F46E5', // Indigo
+  },
+  rehabilitation: {
+    label: 'Recovery & Rehabilitation',
+    shortTag: 'Clinical Care',
+    description: 'Evidence-based de-addiction therapies, psychiatric support, and sustained wellness.',
+    accentColor: '#0F766E', // Teal
+  },
   peer_pressure: {
     label: 'Peer Pressure & Agency',
     shortTag: 'Personal Agency',
@@ -41,6 +65,27 @@ export const QUIZ_CATEGORY_METADATA: Record<
     accentColor: '#0F766E', // Teal
   },
 };
+
+export function getQuizCategoryMeta(category?: string): {
+  label: string;
+  shortTag: string;
+  description: string;
+  accentColor: string;
+} {
+  if (category && QUIZ_CATEGORY_METADATA[category as QuizCategory]) {
+    return QUIZ_CATEGORY_METADATA[category as QuizCategory];
+  }
+  const normalized = category?.toLowerCase().trim().replace(/[- ]/g, '_');
+  if (normalized && QUIZ_CATEGORY_METADATA[normalized as QuizCategory]) {
+    return QUIZ_CATEGORY_METADATA[normalized as QuizCategory];
+  }
+  return {
+    label: category ? category.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'General Awareness',
+    shortTag: category ? category.replace(/[-_]/g, ' ').toUpperCase() : 'AWARENESS',
+    description: 'Evidence-based collegiate substance awareness and prevention education.',
+    accentColor: '#159E9A',
+  };
+}
 
 export const SAMPLE_AWARENESS_QUIZ: Quiz = {
   id: 'nmba-awareness-challenge-v1',

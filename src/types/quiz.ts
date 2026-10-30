@@ -6,6 +6,10 @@
 export type QuizCategory =
   | 'substance_risks'
   | 'myths_and_facts'
+  | 'substance_facts'
+  | 'health_impacts'
+  | 'legal_social'
+  | 'rehabilitation'
   | 'peer_pressure'
   | 'healthy_coping'
   | 'seeking_help'
@@ -132,5 +136,5 @@ export interface AdminQuizStats {
   passingRatePercentage: number;
   topCategoryStrength: string;
   mostChallengingTopic: string;
-  categoryBreakdown: Record<QuizCategory, { totalAttempts: number; averagePercentage: number }>;
+  categoryBreakdown: Partial<Record<QuizCategory, { totalAttempts: number; averagePercentage: number }>>;
 }
