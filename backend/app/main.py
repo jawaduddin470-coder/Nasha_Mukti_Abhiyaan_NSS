@@ -100,13 +100,11 @@ app.add_middleware(
 
 # Mount static files directory for media uploads with safe fallback for read-only serverless filesystems
 try:
-    uploads_dir = os.path.abspath(settings.MEDIA_UPLOAD_DIR)
+    uploads_dir = "/tmp/uploads" if os.environ.get("VERCEL") else os.path.abspath(settings.MEDIA_UPLOAD_DIR)
     os.makedirs(uploads_dir, exist_ok=True)
     app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
-except OSError:
-    uploads_dir = "/tmp/uploads"
-    os.makedirs(uploads_dir, exist_ok=True)
-    app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+except Exception as e:
+    logger.warning(f"Static /uploads mount skipped: {e}")
 
 
 # Health & Readiness Endpoints
