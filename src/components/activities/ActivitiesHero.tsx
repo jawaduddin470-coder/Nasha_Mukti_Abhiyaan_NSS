@@ -149,27 +149,28 @@ export const ActivitiesHero: React.FC<ActivitiesHeroProps> = ({
         <div className="mt-8 space-y-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-2xl bg-[#EAF5FB]/95 dark:bg-[#14243D] border border-[#CFE3F0] dark:border-[#243A5E] shadow-soft-card">
             {/* Status Segmented Tabs */}
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#DCEBF5] dark:bg-[#1B2F4E] border border-[#CFE3F0] dark:border-[#243A5E] w-fit">
-              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-2 flex items-center gap-1">
+            <div className="flex items-center gap-1 sm:gap-1.5 p-1 rounded-xl bg-[#DCEBF5] dark:bg-[#1B2F4E] border border-[#CFE3F0] dark:border-[#243A5E] max-w-full overflow-x-auto no-scrollbar">
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-2 flex items-center gap-1 shrink-0">
                 <Filter className="w-3 h-3 text-[#159E9A]" />
                 Filter:
               </span>
               {[
-                { label: 'All', value: 'all' },
-                { label: 'Upcoming', value: 'upcoming' },
-                { label: 'Completed Archive', value: 'completed' },
+                { label: 'All', shortLabel: 'All', value: 'all' },
+                { label: 'Upcoming', shortLabel: 'Upcoming', value: 'upcoming' },
+                { label: 'Completed Archive', shortLabel: 'Completed', value: 'completed' },
               ].map((s) => (
                 <button
                   key={s.value}
                   type="button"
                   onClick={() => onSelectStatus(s.value)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#159E9A] hover:-translate-y-0.5 active:scale-[0.98] ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#159E9A] hover:-translate-y-0.5 active:scale-[0.98] shrink-0 ${
                     selectedStatus === s.value
                       ? 'bg-[#EAF5FB] dark:bg-[#14243D] text-[#183153] dark:text-white shadow-2xs font-bold'
                       : 'text-[#334C73] dark:text-slate-400 hover:text-[#183153] dark:hover:text-white hover:bg-white/40 dark:hover:bg-[#1B2F4E]/60'
                   }`}
                 >
-                  {s.label}
+                  <span className="hidden xs:inline">{s.label}</span>
+                  <span className="xs:hidden">{s.shortLabel}</span>
                 </button>
               ))}
             </div>

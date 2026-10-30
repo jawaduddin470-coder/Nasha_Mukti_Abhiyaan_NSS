@@ -141,8 +141,8 @@ export const Header: React.FC = () => {
           ))}
         </nav>
 
-        {/* Right Action Cluster */}
-        <div className="hidden md:flex items-center gap-2.5">
+        {/* Right Action Cluster (Desktop >= 1024px) */}
+        <div className="hidden lg:flex items-center gap-2.5">
           {/* 1. Official Portal Link */}
           <a
             href="https://www.nssmjcet.in"
@@ -205,23 +205,34 @@ export const Header: React.FC = () => {
           </Button>
         </div>
 
-        {/* Mobile Hamburger & Theme Toggle Group */}
+        {/* Mobile & Tablet Control Cluster (< 1024px) */}
         <div className="flex lg:hidden items-center gap-1.5">
+          {/* Tablet Helpline Badge */}
+          <a
+            href="tel:14446"
+            className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[#DCEBF5] dark:bg-[#14243D] border border-[#B9DDF5] dark:border-[#243A5E] text-xs text-[#183153] dark:text-slate-200 hover:border-[#159E9A] transition-colors shadow-2xs mr-1"
+            title="National Drug De-Addiction Helpline (Toll-Free 24/7)"
+          >
+            <Phone className="w-3 h-3 text-[#159E9A]" aria-hidden="true" />
+            <span className="text-[11px] font-mono font-bold text-[#183153] dark:text-white">14446</span>
+          </a>
+
           {/* Mobile Replay Intro Icon */}
           <button
             type="button"
             onClick={playIntro}
-            className="p-2 rounded-xl border border-[#D7E7F0] dark:border-[#243A5E] text-[#159E9A] hover:bg-[#EAF6FC] dark:hover:bg-[#172B48] transition-colors"
+            className="p-2.5 min-w-[40px] min-h-[40px] rounded-xl border border-[#D7E7F0] dark:border-[#243A5E] text-[#159E9A] hover:bg-[#EAF6FC] dark:hover:bg-[#172B48] flex items-center justify-center transition-colors active:scale-95"
             title="Replay Cinematic Intro"
             aria-label="Replay Cinematic Intro"
           >
             <Film className="w-4 h-4" aria-hidden="true" />
           </button>
 
+          {/* Mobile Theme Toggle Button */}
           <button
             type="button"
             onClick={toggleTheme}
-            className="p-2 rounded-xl border border-[#D7E7F0] dark:border-[#243A5E] text-[#183153] dark:text-slate-300 hover:bg-[#EAF6FC] dark:hover:bg-[#172B48] transition-colors"
+            className="p-2.5 min-w-[40px] min-h-[40px] rounded-xl border border-[#D7E7F0] dark:border-[#243A5E] text-[#183153] dark:text-slate-300 hover:bg-[#EAF6FC] dark:hover:bg-[#172B48] flex items-center justify-center transition-colors active:scale-95"
             aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
           >
             {theme === 'dark' ? (
@@ -231,10 +242,11 @@ export const Header: React.FC = () => {
             )}
           </button>
 
+          {/* Hamburger Menu Toggle (Touch Target >= 44x44px) */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(true)}
-            className="p-2 rounded-xl border border-[#D7E7F0] dark:border-[#243A5E] text-[#183153] dark:text-slate-300 hover:text-[#183153] dark:hover:text-white hover:bg-[#EAF6FC] dark:hover:bg-[#172B48] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#159E9A] transition-colors"
+            className="p-2.5 min-w-[44px] min-h-[44px] rounded-xl border border-[#D7E7F0] dark:border-[#243A5E] text-[#183153] dark:text-slate-200 hover:text-[#183153] dark:hover:text-white hover:bg-[#EAF6FC] dark:hover:bg-[#172B48] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#159E9A] transition-colors active:scale-95"
             aria-label="Open mobile navigation menu"
             aria-expanded={mobileMenuOpen}
             aria-controls="mobile-navigation"

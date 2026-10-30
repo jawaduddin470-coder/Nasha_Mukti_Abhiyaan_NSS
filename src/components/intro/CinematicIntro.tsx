@@ -240,17 +240,18 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onComplete }) =>
       {/* =========================================================================
           LAYER 1: TOP CONTROL BAR (BRAND, 4-CHAPTER TIMELINE & SKIP)
           ========================================================================= */}
-      <header className="relative z-30 w-full px-4 sm:px-8 pt-5 sm:pt-6 flex items-center justify-between gap-4 pointer-events-auto">
+      <header className="relative z-30 w-full px-2.5 sm:px-6 md:px-8 pt-3 sm:pt-6 flex items-center justify-between gap-1.5 sm:gap-4 pointer-events-auto">
         {/* Brand Lockup */}
-        <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#0E1D33]/85 backdrop-blur-md border border-[#243A5E]/80 shadow-md">
+        <div className="inline-flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-[#0E1D33]/85 backdrop-blur-md border border-[#243A5E]/80 shadow-md shrink-0">
           <img
             src="/assets/branding/nss-logo.png"
             alt="Official National Service Scheme Seal"
-            className="w-5 h-5 object-contain"
+            className="w-4 h-4 sm:w-5 sm:h-5 object-contain"
           />
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="font-bold text-[#EA580C] tracking-wider">NSS MJCET</span>
-            <span className="text-[#38BDF8]/40">&bull;</span>
+          <div className="flex items-center gap-1 text-[11px] sm:text-xs">
+            <span className="font-bold text-[#EA580C] tracking-wider hidden xs:inline sm:inline">NSS MJCET</span>
+            <span className="font-bold text-[#EA580C] tracking-wider xs:hidden sm:hidden">NSS</span>
+            <span className="text-[#38BDF8]/40 hidden sm:inline">&bull;</span>
             <span className="text-slate-300 font-medium hidden sm:inline">
               Nasha Mukti Abhiyaan
             </span>
@@ -259,7 +260,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onComplete }) =>
 
         {/* 4-Chapter Connected Film Progression Bar */}
         <nav
-          className="flex items-center gap-1.5 sm:gap-3 px-3 py-1.5 rounded-full bg-[#0E1D33]/80 backdrop-blur-md border border-[#243A5E]/80 shadow-md"
+          className="flex items-center gap-1 sm:gap-3 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[#0E1D33]/80 backdrop-blur-md border border-[#243A5E]/80 shadow-md shrink-0"
           aria-label="Documentary Chapters"
         >
           {CINEMATIC_CHAPTERS.map((chap, idx) => {
@@ -279,11 +280,11 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onComplete }) =>
                 key={chap.id}
                 type="button"
                 onClick={() => handleJumpToChapter(idx)}
-                className="group flex flex-col items-start gap-1 p-1 sm:px-2 rounded-md hover:bg-white/5 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#38BDF8]"
+                className="group flex flex-col items-start gap-1 p-0.5 sm:p-1 sm:px-2 rounded-md hover:bg-white/5 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#38BDF8]"
                 title={`Jump to Chapter ${chap.chapterNumber}: ${chap.title}`}
                 aria-label={`Chapter ${chap.chapterNumber} ${chap.title}`}
               >
-                <div className="flex items-center gap-1.5 text-[10px] font-mono tracking-widest uppercase">
+                <div className="flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-mono tracking-widest uppercase">
                   <span
                     className={`font-semibold transition-colors duration-300 ${
                       isActive
@@ -309,7 +310,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onComplete }) =>
                 </div>
 
                 {/* Micro Progress Track */}
-                <div className="w-8 sm:w-16 md:w-20 h-1 bg-white/10 rounded-full overflow-hidden">
+                <div className="w-5 sm:w-16 md:w-20 h-1 bg-white/10 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-[#38BDF8] to-[#159E9A] transition-all duration-100 ease-linear rounded-full"
                     style={{ width: `${chapterProgress}%` }}
@@ -324,10 +325,11 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onComplete }) =>
         <button
           type="button"
           onClick={handleSkip}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#0E1D33]/85 hover:bg-[#14243D] text-xs font-semibold text-slate-200 border border-[#243A5E]/80 hover:border-[#38BDF8]/60 shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#38BDF8] cursor-pointer"
+          className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-[#0E1D33]/85 hover:bg-[#14243D] text-[11px] sm:text-xs font-semibold text-slate-200 border border-[#243A5E]/80 hover:border-[#38BDF8]/60 shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#38BDF8] cursor-pointer shrink-0"
           aria-label="Skip cinematic introduction and enter website"
         >
-          <span>Skip Intro</span>
+          <span className="hidden xs:inline sm:inline">Skip Intro</span>
+          <span className="xs:hidden sm:hidden">Skip</span>
           <SkipForward className="w-3.5 h-3.5 text-[#38BDF8]" aria-hidden="true" />
         </button>
       </header>

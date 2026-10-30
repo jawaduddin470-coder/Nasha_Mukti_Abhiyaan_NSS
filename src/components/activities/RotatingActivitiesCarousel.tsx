@@ -360,7 +360,7 @@ export const RotatingActivitiesCarousel: React.FC<RotatingActivitiesCarouselProp
                 </div>
 
                 {/* Details Section */}
-                <div className="md:col-span-6 p-5 sm:p-7 flex flex-col justify-between bg-gradient-to-br from-[#EBF5FB] to-[#F4F9FD] dark:from-[#14243D] dark:to-[#0F1E33] text-left">
+                <div className="md:col-span-6 p-4 sm:p-7 flex flex-col justify-between bg-gradient-to-br from-[#EBF5FB] to-[#F4F9FD] dark:from-[#14243D] dark:to-[#0F1E33] text-left">
                   <div>
                     <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium mb-1.5">
                       <Clock className="w-3.5 h-3.5 text-[#159E9A] shrink-0" />
@@ -413,7 +413,8 @@ export const RotatingActivitiesCarousel: React.FC<RotatingActivitiesCarouselProp
                           }}
                           className="text-xs py-2 shadow-2xs"
                         >
-                          Explore Activity Details
+                          <span className="hidden xs:inline">Explore Activity Details</span>
+                          <span className="xs:hidden">Explore Details</span>
                         </Button>
                         <span className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:inline">
                           Click card to view agenda

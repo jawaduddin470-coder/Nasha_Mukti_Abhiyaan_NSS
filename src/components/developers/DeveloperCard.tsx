@@ -38,11 +38,11 @@ export const DeveloperCard: React.FC<DeveloperCardProps> = ({
       tabIndex={0}
       role="article"
       aria-label={`Developer profile: ${developer.fullName}`}
-      className={`w-full h-full min-h-[396px] sm:min-h-[472px] p-8 sm:p-12 rounded-3xl bg-gradient-to-br from-[#EAF5FB]/95 to-[#F4FAFD]/95 dark:from-[#14243D] dark:to-[#0F1E33] border border-[#CFE3F0] dark:border-[#243A5E] shadow-soft-card hover:shadow-elevated hover:border-[#159E9A] dark:hover:border-teal-500 hover:-translate-y-2 transition-all duration-300 flex flex-col items-center text-center group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#159E9A] ${className}`}
+      className={`w-full h-full min-h-[360px] xs:min-h-[396px] sm:min-h-[472px] p-5 xs:p-8 sm:p-12 rounded-3xl bg-gradient-to-br from-[#EAF5FB]/95 to-[#F4FAFD]/95 dark:from-[#14243D] dark:to-[#0F1E33] border border-[#CFE3F0] dark:border-[#243A5E] shadow-soft-card hover:shadow-elevated hover:border-[#159E9A] dark:hover:border-teal-500 hover:-translate-y-2 transition-all duration-300 flex flex-col items-center text-center group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#159E9A] ${className}`}
     >
       {/* Prominent, properly framed portrait or monogram */}
       <div className="relative mb-6 shrink-0">
-        <div className="w-48 h-48 sm:w-56 sm:h-56 rounded-3xl p-1 bg-gradient-to-tr from-[#159E9A] via-[#4F8FE8] to-[#239B70] shadow-md group-hover:scale-105 transition-transform duration-300 overflow-hidden shrink-0">
+        <div className="w-40 h-40 xs:w-48 xs:h-48 sm:w-56 sm:h-56 rounded-3xl p-1 bg-gradient-to-tr from-[#159E9A] via-[#4F8FE8] to-[#239B70] shadow-md group-hover:scale-105 transition-transform duration-300 overflow-hidden shrink-0">
           {developer.avatarUrl ? (
             <img
               src={resolveMediaUrl(developer.avatarUrl)}
@@ -53,14 +53,14 @@ export const DeveloperCard: React.FC<DeveloperCardProps> = ({
                 e.currentTarget.style.display = 'none';
                 if (e.currentTarget.parentElement) {
                   const fallbackDiv = document.createElement('div');
-                  fallbackDiv.className = "w-full h-full rounded-[22px] bg-[#DCEBF5] dark:bg-[#0B1524] flex items-center justify-center text-[#183153] dark:text-[#E8F3FA] font-serif font-black text-4xl sm:text-5xl shadow-inner select-none";
+                  fallbackDiv.className = "w-full h-full rounded-[22px] bg-[#DCEBF5] dark:bg-[#0B1524] flex items-center justify-center text-[#183153] dark:text-[#E8F3FA] font-serif font-black text-3xl xs:text-4xl sm:text-5xl shadow-inner select-none";
                   fallbackDiv.innerHTML = `<span>${developer.fullName.charAt(0)}</span>`;
                   e.currentTarget.parentElement.appendChild(fallbackDiv);
                 }
               }}
             />
           ) : (
-            <div className="w-full h-full rounded-[22px] bg-[#DCEBF5] dark:bg-[#0B1524] flex items-center justify-center text-[#183153] dark:text-[#E8F3FA] font-serif font-black text-4xl sm:text-5xl shadow-inner select-none">
+            <div className="w-full h-full rounded-[22px] bg-[#DCEBF5] dark:bg-[#0B1524] flex items-center justify-center text-[#183153] dark:text-[#E8F3FA] font-serif font-black text-3xl xs:text-4xl sm:text-5xl shadow-inner select-none">
               <span>{initials}</span>
             </div>
           )}
@@ -68,8 +68,8 @@ export const DeveloperCard: React.FC<DeveloperCardProps> = ({
       </div>
 
       {/* Developer Full Name in consistently reserved vertical space (absorbs 1-line or 2-line wrap) */}
-      <div className="w-full flex items-center justify-center min-h-[4.25rem] sm:min-h-[5rem] px-2 shrink-0">
-        <HeadingTag className="font-serif text-2xl sm:text-3xl font-bold text-[#183153] dark:text-white group-hover:text-[#159E9A] dark:group-hover:text-[#5EEAD4] transition-colors leading-snug text-center">
+      <div className="w-full flex items-center justify-center min-h-[3.75rem] xs:min-h-[4.25rem] sm:min-h-[5rem] px-2 shrink-0">
+        <HeadingTag className="font-serif text-xl xs:text-2xl sm:text-3xl font-bold text-[#183153] dark:text-white group-hover:text-[#159E9A] dark:group-hover:text-[#5EEAD4] transition-colors leading-snug text-center">
           {developer.fullName}
         </HeadingTag>
       </div>

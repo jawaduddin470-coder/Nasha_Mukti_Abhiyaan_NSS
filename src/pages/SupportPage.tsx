@@ -63,7 +63,7 @@ export const SupportPage: React.FC = () => {
             {VERIFIED_HELPLINES.map((helpline) => (
               <div
                 key={helpline.id}
-                className="p-7 rounded-2xl bg-gradient-to-br from-[#EAF5FB]/95 via-[#F4FAFD]/90 to-[#E8F3FA]/95 dark:from-[#14243D] dark:via-[#112036] dark:to-[#0E1B2E] border border-[#CFE3F0] dark:border-[#243A5E] border-t-4 border-t-[#159E9A] shadow-soft-card hover:shadow-elevated hover:-translate-y-1.5 hover:border-[#159E9A] dark:hover:border-teal-500 transition-all duration-300 flex flex-col justify-between text-left"
+                className="p-5 sm:p-7 rounded-2xl bg-gradient-to-br from-[#EAF5FB]/95 via-[#F4FAFD]/90 to-[#E8F3FA]/95 dark:from-[#14243D] dark:via-[#112036] dark:to-[#0E1B2E] border border-[#CFE3F0] dark:border-[#243A5E] border-t-4 border-t-[#159E9A] shadow-soft-card hover:shadow-elevated hover:-translate-y-1.5 hover:border-[#159E9A] dark:hover:border-teal-500 transition-all duration-300 flex flex-col justify-between text-left"
               >
                 <div>
                   <div className="flex items-start justify-between gap-3 mb-3">
@@ -82,14 +82,14 @@ export const SupportPage: React.FC = () => {
                     {helpline.governingBody}
                   </p>
 
-                  <div className="my-5 p-4 rounded-xl bg-[#EAF6FC]/60 dark:bg-[#1B2F4E] border border-[#D7E7F0] dark:border-[#243A5E] flex items-center justify-between">
+                  <div className="my-5 p-3.5 sm:p-4 rounded-xl bg-[#EAF6FC]/60 dark:bg-[#1B2F4E] border border-[#D7E7F0] dark:border-[#243A5E] flex flex-col xs:flex-row xs:items-center justify-between gap-3">
                     <div>
                       <span className="text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold block">
                         Direct Dial Number:
                       </span>
                       <a
                         href={`tel:${helpline.primaryNumber.replace(/\s+/g, '')}`}
-                        className="font-serif text-2xl font-bold text-[#183153] dark:text-white hover:text-[#159E9A] dark:hover:text-[#5EEAD4] transition-colors tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#159E9A] rounded"
+                        className="font-serif text-xl sm:text-2xl font-bold text-[#183153] dark:text-white hover:text-[#159E9A] dark:hover:text-[#5EEAD4] transition-colors tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#159E9A] rounded"
                         aria-label={`Dial ${helpline.name} at ${helpline.primaryNumber}`}
                       >
                         {helpline.primaryNumber}
@@ -99,10 +99,10 @@ export const SupportPage: React.FC = () => {
                     <a
                       href={`tel:${helpline.primaryNumber.replace(/\s+/g, '')}`}
                       data-cursor="CALL"
-                      className="px-4 py-2 rounded-xl bg-[#159E9A] hover:bg-[#0F8380] text-white font-semibold text-xs transition-colors shadow-teal-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#159E9A] flex items-center gap-1.5 min-h-[40px]"
+                      className="px-4 py-2 rounded-xl bg-[#159E9A] hover:bg-[#0F8380] text-white font-semibold text-xs transition-colors shadow-teal-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#159E9A] flex items-center justify-center gap-1.5 min-h-[40px] w-full xs:w-auto shrink-0"
                     >
                       <Phone className="w-3.5 h-3.5" aria-hidden="true" />
-                      Call Now
+                      <span>Call Now</span>
                     </a>
                   </div>
 
@@ -218,7 +218,7 @@ export const SupportPage: React.FC = () => {
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-            <div className="p-7 rounded-2xl bg-gradient-to-br from-[#EAF5FB]/90 to-[#F4FAFD]/90 dark:from-[#14243D] dark:to-[#0F1E33] border border-[#CFE3F0] dark:border-[#243A5E] shadow-soft-card hover:shadow-elevated hover:border-[#159E9A] dark:hover:border-teal-500 hover:-translate-y-1 transition-all duration-300">
+            <div className="p-5 sm:p-7 rounded-2xl bg-gradient-to-br from-[#EAF5FB]/90 to-[#F4FAFD]/90 dark:from-[#14243D] dark:to-[#0F1E33] border border-[#CFE3F0] dark:border-[#243A5E] shadow-soft-card hover:shadow-elevated hover:border-[#159E9A] dark:hover:border-teal-500 hover:-translate-y-1 transition-all duration-300">
               <h3 className="font-serif text-lg font-bold text-[#183153] dark:text-white">
                 Will the college disciplinary committee be notified if I call a helpline?
               </h3>
@@ -227,7 +227,7 @@ export const SupportPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="p-7 rounded-2xl bg-gradient-to-br from-[#EAF5FB]/90 to-[#F4FAFD]/90 dark:from-[#14243D] dark:to-[#0F1E33] border border-[#CFE3F0] dark:border-[#243A5E] shadow-soft-card hover:shadow-elevated hover:border-[#159E9A] dark:hover:border-teal-500 hover:-translate-y-1 transition-all duration-300">
+            <div className="p-5 sm:p-7 rounded-2xl bg-gradient-to-br from-[#EAF5FB]/90 to-[#F4FAFD]/90 dark:from-[#14243D] dark:to-[#0F1E33] border border-[#CFE3F0] dark:border-[#243A5E] shadow-soft-card hover:shadow-elevated hover:border-[#159E9A] dark:hover:border-teal-500 hover:-translate-y-1 transition-all duration-300">
               <h3 className="font-serif text-lg font-bold text-[#183153] dark:text-white">
                 Can I remain completely anonymous when I call?
               </h3>
@@ -236,7 +236,7 @@ export const SupportPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="p-7 rounded-2xl bg-gradient-to-br from-[#EAF5FB]/90 to-[#F4FAFD]/90 dark:from-[#14243D] dark:to-[#0F1E33] border border-[#CFE3F0] dark:border-[#243A5E] shadow-soft-card hover:shadow-elevated hover:border-[#159E9A] dark:hover:border-teal-500 hover:-translate-y-1 transition-all duration-300">
+            <div className="p-5 sm:p-7 rounded-2xl bg-gradient-to-br from-[#EAF5FB]/90 to-[#F4FAFD]/90 dark:from-[#14243D] dark:to-[#0F1E33] border border-[#CFE3F0] dark:border-[#243A5E] shadow-soft-card hover:shadow-elevated hover:border-[#159E9A] dark:hover:border-teal-500 hover:-translate-y-1 transition-all duration-300">
               <h3 className="font-serif text-lg font-bold text-[#183153] dark:text-white">
                 How does the NSS MJCET unit support students experiencing difficulty?
               </h3>
@@ -245,7 +245,7 @@ export const SupportPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="p-7 rounded-2xl bg-gradient-to-br from-[#EAF5FB]/90 to-[#F4FAFD]/90 dark:from-[#14243D] dark:to-[#0F1E33] border border-[#CFE3F0] dark:border-[#243A5E] shadow-soft-card hover:shadow-elevated hover:border-[#159E9A] dark:hover:border-teal-500 hover:-translate-y-1 transition-all duration-300">
+            <div className="p-5 sm:p-7 rounded-2xl bg-gradient-to-br from-[#EAF5FB]/90 to-[#F4FAFD]/90 dark:from-[#14243D] dark:to-[#0F1E33] border border-[#CFE3F0] dark:border-[#243A5E] shadow-soft-card hover:shadow-elevated hover:border-[#159E9A] dark:hover:border-teal-500 hover:-translate-y-1 transition-all duration-300">
               <h3 className="font-serif text-lg font-bold text-[#183153] dark:text-white">
                 What if a friend refuses help even though they are clearly struggling?
               </h3>

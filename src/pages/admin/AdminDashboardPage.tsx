@@ -121,7 +121,7 @@ export const AdminDashboardPage: React.FC = () => {
       {/* Sidebar Navigation */}
       <aside
         className={`${
-          mobileMenuOpen ? 'fixed inset-0 z-40 bg-[#183153] flex' : 'hidden'
+          mobileMenuOpen ? 'fixed inset-x-0 top-14 bottom-0 z-40 bg-[#183153] flex' : 'hidden'
         } md:flex flex-col w-full md:w-64 bg-[#183153] border-r border-[#152744] shrink-0 md:sticky md:top-0 md:h-screen text-white`}
       >
         <div className="p-5 border-b border-[#22416D] flex items-center gap-3">

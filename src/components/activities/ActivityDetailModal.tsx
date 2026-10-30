@@ -81,17 +81,17 @@ export const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1524]/75 backdrop-blur-md transition-opacity duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-[#0B1524]/75 backdrop-blur-md transition-opacity duration-200"
       role="dialog"
       aria-modal="true"
       aria-labelledby="activity-modal-title"
     >
       <div
         ref={modalRef}
-        className="bg-[#EAF5FB] dark:bg-[#14243D] border border-[#CFE3F0] dark:border-[#243A5E] rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col text-left animate-in fade-in zoom-in-95 duration-200"
+        className="bg-[#EAF5FB] dark:bg-[#14243D] border border-[#CFE3F0] dark:border-[#243A5E] rounded-3xl max-w-2xl w-full max-h-[92dvh] sm:max-h-[90vh] overflow-hidden shadow-2xl flex flex-col text-left animate-in fade-in zoom-in-95 duration-200"
       >
         {/* Header Cover & 5-Image Carousel Banner */}
-        <div className="relative h-56 sm:h-64 w-full bg-[#0B1524] shrink-0 overflow-hidden">
+        <div className="relative h-44 sm:h-64 w-full bg-[#0B1524] shrink-0 overflow-hidden">
           {modalImages.length > 0 ? (
             <img
               src={resolveMediaUrl(modalImages[activeImageIndex])}
@@ -167,7 +167,7 @@ export const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({
         </div>
 
         {/* Scrollable Content Body */}
-        <div className="p-6 sm:p-8 overflow-y-auto space-y-6">
+        <div className="p-4 sm:p-8 overflow-y-auto space-y-4 sm:space-y-6">
           <div>
             <h2
               id="activity-modal-title"
