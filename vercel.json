@@ -3,11 +3,18 @@
   "services": {
     "app": {
       "root": ".",
-      "framework": "vite"
+      "framework": "vite",
+      "rewrites": [
+        {
+          "source": "/(.*)",
+          "destination": "/index.html"
+        }
+      ]
     },
     "backend": {
       "root": "backend",
-      "framework": "fastapi"
+      "framework": "fastapi",
+      "entrypoint": "main:app"
     }
   },
   "rewrites": [
@@ -24,22 +31,9 @@
       }
     },
     {
-      "source": "/assets/(.*)",
-      "destination": {
-        "service": "app"
-      }
-    },
-    {
-      "source": "/(.*\\..*)",
-      "destination": {
-        "service": "app"
-      }
-    },
-    {
       "source": "/(.*)",
       "destination": {
-        "service": "app",
-        "path": "/index.html"
+        "service": "app"
       }
     }
   ]
