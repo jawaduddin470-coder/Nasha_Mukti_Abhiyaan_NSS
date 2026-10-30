@@ -23,6 +23,10 @@ db_manager = MongoDB()
 
 async def connect_to_mongo() -> None:
     """Initialize MongoDB Atlas connection pool."""
+    if not settings.MONGODB_URI or not settings.MONGODB_URI.strip():
+        logger.warning("MONGODB_URI is not set. Database connection skipped.")
+        return
+
     logger.info("Connecting to MongoDB Atlas...")
     try:
         db_manager.client = AsyncIOMotorClient(
@@ -30,7 +34,7 @@ async def connect_to_mongo() -> None:
             tlsCAFile=certifi.where(),
             serverSelectionTimeoutMS=5000,
             maxPoolSize=20,
-            minPoolSize=2,
+            minPoolSize=1,
         )
         db_manager.database = db_manager.client[settings.DATABASE_NAME]
         # Verify connection with ping
@@ -38,7 +42,6 @@ async def connect_to_mongo() -> None:
         logger.info(f"Connected to MongoDB Atlas: database='{settings.DATABASE_NAME}'")
     except Exception as e:
         logger.error(f"Failed to connect to MongoDB Atlas: {e}")
-        raise e
 
 
 async def close_mongo_connection() -> None:

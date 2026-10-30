@@ -40,19 +40,32 @@ logger = logging.getLogger("nmba_backend.main")
 async def lifespan(app: FastAPI):
     """Application lifespan context manager for startup and shutdown events."""
     logger.info("Initializing NSS MJCET Backend...")
-    # Ensure media directory exists
-    os.makedirs(settings.MEDIA_UPLOAD_DIR, exist_ok=True)
+    try:
+        os.makedirs(settings.MEDIA_UPLOAD_DIR, exist_ok=True)
+    except OSError:
+        try:
+            os.makedirs("/tmp/uploads", exist_ok=True)
+        except OSError:
+            pass
+
     # Connect to MongoDB Atlas
     await connect_to_mongo()
     # Verify indexes
     if db_manager.database is not None:
-        await create_indexes(db_manager.database)
+        try:
+            await create_indexes(db_manager.database)
+        except Exception as e:
+            logger.warning(f"Index creation warning: {e}")
+
     logger.info("NSS MJCET Backend initialized successfully.")
 
     yield
 
     logger.info("Shutting down NSS MJCET Backend...")
-    await close_mongo_connection()
+    try:
+        await close_mongo_connection()
+    except Exception as e:
+        logger.warning(f"Shutdown warning: {e}")
     logger.info("NSS MJCET Backend shutdown complete.")
 
 
@@ -72,10 +85,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files directory for media uploads
-uploads_dir = os.path.abspath(settings.MEDIA_UPLOAD_DIR)
-os.makedirs(uploads_dir, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+# Mount static files directory for media uploads with safe fallback for read-only serverless filesystems
+try:
+    uploads_dir = os.path.abspath(settings.MEDIA_UPLOAD_DIR)
+    os.makedirs(uploads_dir, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+except OSError:
+    uploads_dir = "/tmp/uploads"
+    os.makedirs(uploads_dir, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 
 # Health & Readiness Endpoints
@@ -84,19 +102,27 @@ app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 async def health_check():
     """Health check endpoint indicating service availability and database status."""
     db_connected = False
+    diag_detail = None
     if db_manager.database is not None:
         try:
             await db_manager.database.command("ping")
             db_connected = True
-        except Exception:
+        except Exception as e:
             db_connected = False
+            diag_detail = f"Ping failed: {e}"
+    elif not settings.MONGODB_URI:
+        diag_detail = "MONGODB_URI is not set in environment variables."
+    else:
+        diag_detail = "Database client not connected."
 
     return {
         "status": "healthy" if db_connected else "degraded",
         "service": "nss-mjcet-nasha-mukti-backend",
         "version": "1.0.0",
         "database": "connected" if db_connected else "disconnected",
+        "database_name": settings.DATABASE_NAME if db_connected else None,
         "environment": settings.ENVIRONMENT,
+        "detail": diag_detail,
     }
 
 

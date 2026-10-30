@@ -13,10 +13,10 @@ class Settings(BaseSettings):
     PORT: int = 8000
     HOST: str = "0.0.0.0"
     ENVIRONMENT: str = "development"
-    ALLOWED_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
+    ALLOWED_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,*"
 
     # MongoDB Atlas Database
-    MONGODB_URI: str
+    MONGODB_URI: str = ""
     DATABASE_NAME: str = "nasha_mukti_db"
 
     # Firebase Authentication & Project
@@ -26,8 +26,8 @@ class Settings(BaseSettings):
     # Super Admin Bootstrap (comma-separated list of approved Google emails)
     SUPER_ADMIN_EMAILS: str = "jawaddduddin@gmail.com"
 
-    # Media & Uploads
-    MEDIA_UPLOAD_DIR: str = "backend/uploads"
+    # Media & Uploads (Defaults to /tmp/uploads on Vercel read-only serverless environment)
+    MEDIA_UPLOAD_DIR: str = "/tmp/uploads" if os.environ.get("VERCEL") else "backend/uploads"
     MAX_MEDIA_FILE_SIZE_MB: int = 10
 
     model_config = SettingsConfigDict(
