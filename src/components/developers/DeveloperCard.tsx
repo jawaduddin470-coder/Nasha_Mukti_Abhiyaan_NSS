@@ -2,6 +2,7 @@ import React from 'react';
 import { Linkedin, ExternalLink } from 'lucide-react';
 import { DeveloperProfile } from '../../types/developer';
 import { isValidLinkedInUrl, formatExternalUrl } from '../../utils/urlValidators';
+import { resolveMediaUrl } from '../../utils/mediaHelper';
 
 export interface DeveloperCardProps {
   developer: DeveloperProfile;
@@ -44,10 +45,19 @@ export const DeveloperCard: React.FC<DeveloperCardProps> = ({
         <div className="w-48 h-48 sm:w-56 sm:h-56 rounded-3xl p-1 bg-gradient-to-tr from-[#159E9A] via-[#4F8FE8] to-[#239B70] shadow-md group-hover:scale-105 transition-transform duration-300 overflow-hidden shrink-0">
           {developer.avatarUrl ? (
             <img
-              src={developer.avatarUrl}
+              src={resolveMediaUrl(developer.avatarUrl)}
               alt={developer.fullName}
               className="w-full h-full object-cover object-center rounded-[22px]"
               loading="lazy"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                if (e.currentTarget.parentElement) {
+                  const fallbackDiv = document.createElement('div');
+                  fallbackDiv.className = "w-full h-full rounded-[22px] bg-[#DCEBF5] dark:bg-[#0B1524] flex items-center justify-center text-[#183153] dark:text-[#E8F3FA] font-serif font-black text-4xl sm:text-5xl shadow-inner select-none";
+                  fallbackDiv.innerHTML = `<span>${developer.fullName.charAt(0)}</span>`;
+                  e.currentTarget.parentElement.appendChild(fallbackDiv);
+                }
+              }}
             />
           ) : (
             <div className="w-full h-full rounded-[22px] bg-[#DCEBF5] dark:bg-[#0B1524] flex items-center justify-center text-[#183153] dark:text-[#E8F3FA] font-serif font-black text-4xl sm:text-5xl shadow-inner select-none">

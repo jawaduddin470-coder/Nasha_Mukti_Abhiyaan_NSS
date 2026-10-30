@@ -6,6 +6,7 @@ Manages upload, cataloging, search, selection, and deletion of media assets.
 
 import os
 import uuid
+import base64
 import logging
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
@@ -58,15 +59,34 @@ async def upload_media_asset(
     ext = ALLOWED_MIME_TYPES[content_type]
     unique_filename = f"{datetime.now().strftime('%Y%m%d')}_{uuid.uuid4().hex[:12]}{ext}"
 
-    os.makedirs(settings.MEDIA_UPLOAD_DIR, exist_ok=True)
-    destination_path = os.path.join(settings.MEDIA_UPLOAD_DIR, unique_filename)
-
-    with open(destination_path, "wb") as f:
-        f.write(contents)
+    try:
+        os.makedirs(settings.MEDIA_UPLOAD_DIR, exist_ok=True)
+        destination_path = os.path.join(settings.MEDIA_UPLOAD_DIR, unique_filename)
+        with open(destination_path, "wb") as f:
+            f.write(contents)
+    except Exception as e:
+        logger.warning(f"Disk write failed or skipped: {e}")
 
     public_url = f"/uploads/{unique_filename}"
     now_iso = datetime.now(timezone.utc).isoformat()
     media_id = f"med-{uuid.uuid4().hex[:10]}"
+
+    # Persist in MongoDB uploaded_images for serverless persistence
+    b64_data = base64.b64encode(contents).decode("utf-8")
+    await db["uploaded_images"].update_one(
+        {"filename": unique_filename},
+        {
+            "$set": {
+                "filename": unique_filename,
+                "contentType": content_type,
+                "mimeType": content_type,
+                "sizeBytes": len(contents),
+                "data": b64_data,
+                "uploadedAt": now_iso,
+            }
+        },
+        upsert=True,
+    )
 
     media_doc = {
         "id": media_id,
@@ -176,6 +196,11 @@ async def delete_media_asset(
                 os.remove(filepath)
             except Exception as e:
                 logger.warning(f"Failed to remove physical file {filepath}: {e}")
+
+        try:
+            await db["uploaded_images"].delete_one({"filename": filename})
+        except Exception:
+            pass
 
     await db["media_items"].delete_one({"id": id})
 

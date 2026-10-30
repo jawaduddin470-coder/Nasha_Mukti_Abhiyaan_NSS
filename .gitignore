@@ -31,7 +31,8 @@ dist-ssr
 backend/venv/
 backend/.env
 backend/uploads/
-uploads/
+/uploads/
+!public/uploads/
 scratch/
 __pycache__/
 *.pyc

@@ -11,6 +11,7 @@ import {
 import { GalleryItem } from '../../types/gallery';
 import { Badge } from '../common/Badge';
 import { useTheme } from '../../context/ThemeContext';
+import { resolveMediaUrl, handleMediaError } from '../../utils/mediaHelper';
 
 interface SpatialExhibitionStageProps {
   items: GalleryItem[];
@@ -172,9 +173,10 @@ export const SpatialExhibitionStage: React.FC<SpatialExhibitionStageProps> = ({
             className="hidden md:block absolute left-1/4 w-[280px] lg:w-[340px] aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl opacity-40 hover:opacity-75 cursor-pointer filter blur-[0.5px] hover:blur-none border-2 border-white/20 dark:border-white/10 will-change-transform z-10"
           >
             <img
-              src={prevItem.imageUrl}
+              src={resolveMediaUrl(prevItem.imageUrl)}
               alt={prevItem.title}
               className="w-full h-full object-cover"
+              onError={(e) => handleMediaError(e, prevItem.title, prevItem.category)}
             />
             <div className="absolute inset-0 bg-charcoal-950/50" />
             <div className="absolute bottom-3 left-3 right-3 text-white text-xs font-serif font-bold truncate">
@@ -204,9 +206,10 @@ export const SpatialExhibitionStage: React.FC<SpatialExhibitionStageProps> = ({
           >
             {/* The Master Image (Crisp, High-Resolution, Large Scale) */}
             <img
-              src={currentItem.imageUrl}
+              src={resolveMediaUrl(currentItem.imageUrl)}
               alt={currentItem.title}
               className="absolute inset-0 w-full h-full object-cover filter brightness-[0.96] group-hover:scale-104 transition-transform duration-700 ease-out"
+              onError={(e) => handleMediaError(e, currentItem.title, currentItem.category)}
             />
 
             {/* Cinematic Gradient Scrim */}
@@ -265,9 +268,10 @@ export const SpatialExhibitionStage: React.FC<SpatialExhibitionStageProps> = ({
             className="hidden md:block absolute right-1/4 w-[280px] lg:w-[340px] aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl opacity-40 hover:opacity-75 cursor-pointer filter blur-[0.5px] hover:blur-none border-2 border-white/20 dark:border-white/10 will-change-transform z-10"
           >
             <img
-              src={nextItem.imageUrl}
+              src={resolveMediaUrl(nextItem.imageUrl)}
               alt={nextItem.title}
               className="w-full h-full object-cover"
+              onError={(e) => handleMediaError(e, nextItem.title, nextItem.category)}
             />
             <div className="absolute inset-0 bg-charcoal-950/50" />
             <div className="absolute bottom-3 left-3 right-3 text-white text-xs font-serif font-bold truncate">

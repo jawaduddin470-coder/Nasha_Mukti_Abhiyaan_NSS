@@ -32,6 +32,7 @@ import {
   uploadMediaAsset,
   deleteMediaAsset,
 } from '../../services/mediaService';
+import { resolveMediaUrl, handleMediaError } from '../../utils/mediaHelper';
 
 interface MediaLibraryModalProps {
   isOpen: boolean;
@@ -370,12 +371,10 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
                       >
                         <div className="aspect-4/3 bg-slate-100 overflow-hidden relative">
                           <img
-                            src={item.url}
+                            src={resolveMediaUrl(item.url)}
                             alt={item.title || item.filename}
                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                            onError={(e) => {
-                              (e.target as HTMLElement).style.opacity = '0.3';
-                            }}
+                            onError={(e) => handleMediaError(e, item.title || item.filename, item.category)}
                           />
                           <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-black/60 text-white backdrop-blur-xs">
                             {item.category}

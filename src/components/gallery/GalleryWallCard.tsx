@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Eye, Calendar, MapPin, Camera } from 'lucide-react';
 import { GalleryItem } from '../../types/gallery';
 import { Badge } from '../common/Badge';
+import { resolveMediaUrl } from '../../utils/mediaHelper';
 
 interface GalleryWallCardProps {
   photo: GalleryItem;
@@ -78,7 +79,7 @@ export const GalleryWallCard: React.FC<GalleryWallCardProps> = ({
           </div>
         ) : (
           <img
-            src={photo.thumbnailUrl || photo.imageUrl}
+            src={resolveMediaUrl(photo.thumbnailUrl || photo.imageUrl)}
             alt={photo.title}
             loading="lazy"
             onLoad={() => setImageLoaded(true)}

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Calendar, MapPin, Users, Clock, ArrowRight } from 'lucide-react';
 import { Activity } from '../../types/activity';
 import { Badge } from '../common/Badge';
+import { resolveMediaUrl, handleMediaError } from '../../utils/mediaHelper';
 
 interface ActivityCardProps {
   activity: Activity;
@@ -79,10 +80,11 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
           }`}
         >
           <img
-            src={activity.coverImage}
+            src={resolveMediaUrl(activity.coverImage)}
             alt={activity.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
             loading="lazy"
+            onError={(e) => handleMediaError(e, activity.title, activity.category)}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0B1524]/80 via-transparent to-transparent" />
 

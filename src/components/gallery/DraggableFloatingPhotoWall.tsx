@@ -9,6 +9,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { GalleryItem } from '../../types/gallery';
+import { resolveMediaUrl, handleMediaError } from '../../utils/mediaHelper';
 
 interface DraggableFloatingPhotoWallProps {
   items: GalleryItem[];
@@ -394,11 +395,12 @@ export const DraggableFloatingPhotoWall: React.FC<DraggableFloatingPhotoWallProp
                 {/* Photo Image */}
                 <div className="relative aspect-[4/3] sm:aspect-[16/10] overflow-hidden bg-[#0A182B]">
                   <img
-                    src={photo.imageUrl}
+                    src={resolveMediaUrl(photo.imageUrl)}
                     alt={photo.title}
                     className="w-full h-full object-cover filter brightness-[0.93] transition-transform duration-700 ease-out group-hover:scale-105 pointer-events-none"
                     loading="lazy"
                     draggable={false}
+                    onError={(e) => handleMediaError(e, photo.title, photo.category)}
                   />
 
                   {/* Gentle Gradient Vignette */}

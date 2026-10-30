@@ -3,6 +3,7 @@ import { MapPin, Users, ArrowRight, Clock, Award, ShieldCheck } from 'lucide-rea
 import { Activity } from '../../types/activity';
 import { Badge } from '../common/Badge';
 import { Button } from '../common/Button';
+import { resolveMediaUrl, handleMediaError } from '../../utils/mediaHelper';
 
 interface FeaturedActivityCardProps {
   activity: Activity;
@@ -64,10 +65,11 @@ export const FeaturedActivityCard: React.FC<FeaturedActivityCardProps> = ({
         {/* Dominant Photographic Section (60% width on desktop) */}
         <div className="lg:col-span-7 relative min-h-[320px] sm:min-h-[420px] bg-charcoal-950 overflow-hidden">
           <img
-            src={activity.coverImage}
+            src={resolveMediaUrl(activity.coverImage)}
             alt={activity.title}
             className="w-full h-full object-cover object-center filter brightness-[0.93] group-hover:scale-105 transition-transform duration-700 ease-out"
             loading="lazy"
+            onError={(e) => handleMediaError(e, activity.title, activity.category)}
           />
 
           {/* Cinematic Vignette Overlay */}

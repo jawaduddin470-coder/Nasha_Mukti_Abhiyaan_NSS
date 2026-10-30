@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Activity } from '../../types/activity';
 import { Button } from '../common/Button';
+import { resolveMediaUrl, handleMediaError } from '../../utils/mediaHelper';
 
 const AUTOPLAY_INTERVAL_MS = 1800; // ~1.8s per automatic rotation (2x speed preserved)
 
@@ -322,12 +323,13 @@ export const RotatingActivitiesCarousel: React.FC<RotatingActivitiesCarouselProp
                 {/* Photographic Cover */}
                 <div className="md:col-span-6 relative h-48 sm:h-56 md:h-full overflow-hidden bg-[#0B1524]">
                   <img
-                    src={activity.coverImage}
+                    src={resolveMediaUrl(activity.coverImage)}
                     alt={activity.title}
                     className={`w-full h-full object-cover object-center filter brightness-[0.92] transition-transform duration-700 ease-out ${
                       isCenter ? 'group-hover:scale-105' : ''
                     }`}
                     loading="lazy"
+                    onError={(e) => handleMediaError(e, activity.title, activity.category)}
                   />
 
                   {/* Gradient Lighting Overlay */}

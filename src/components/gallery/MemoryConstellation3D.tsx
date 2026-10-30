@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { GalleryItem } from '../../types/gallery';
 import { Badge } from '../common/Badge';
+import { resolveMediaUrl, handleMediaError } from '../../utils/mediaHelper';
 
 interface MemoryConstellation3DProps {
   items: GalleryItem[];
@@ -349,9 +350,10 @@ export const MemoryConstellation3D: React.FC<MemoryConstellation3DProps> = ({
                 className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-charcoal-900 shrink-0 border border-saffron-400/40 cursor-pointer group"
               >
                 <img
-                  src={activeItem.thumbnailUrl || activeItem.imageUrl}
+                  src={resolveMediaUrl(activeItem.thumbnailUrl || activeItem.imageUrl)}
                   alt={activeItem.title}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  onError={(e) => handleMediaError(e, activeItem.title, activeItem.category)}
                 />
                 <div className="absolute inset-0 bg-charcoal-950/30 group-hover:bg-transparent transition-colors flex items-center justify-center">
                   <Maximize2 className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />

@@ -9,6 +9,7 @@
 import React, { useState } from 'react';
 import { Image as ImageIcon, Upload, Trash2, FolderOpen } from 'lucide-react';
 import { MediaLibraryModal } from './MediaLibraryModal';
+import { resolveMediaUrl, handleMediaError } from '../../utils/mediaHelper';
 
 interface MediaPickerInputProps {
   label: string;
@@ -57,12 +58,10 @@ export const MediaPickerInput: React.FC<MediaPickerInputProps> = ({
           {value ? (
             <>
               <img
-                src={value}
+                src={resolveMediaUrl(value)}
                 alt="Selected preview"
                 className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
-                }}
+                onError={(e) => handleMediaError(e, label, category)}
               />
               <button
                 type="button"

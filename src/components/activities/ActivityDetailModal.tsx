@@ -3,6 +3,7 @@ import { X, Calendar, MapPin, Users, Clock, ShieldCheck, Tag, ExternalLink, Chec
 import { Activity } from '../../types/activity';
 import { Badge } from '../common/Badge';
 import { Button } from '../common/Button';
+import { resolveMediaUrl, handleMediaError } from '../../utils/mediaHelper';
 
 interface ActivityDetailModalProps {
   activity: Activity | null;
@@ -93,9 +94,10 @@ export const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({
         <div className="relative h-56 sm:h-64 w-full bg-[#0B1524] shrink-0 overflow-hidden">
           {modalImages.length > 0 ? (
             <img
-              src={modalImages[activeImageIndex]}
+              src={resolveMediaUrl(modalImages[activeImageIndex])}
               alt={`${activity.title} slide ${activeImageIndex + 1}`}
               className="w-full h-full object-cover transition-all duration-300"
+              onError={(e) => handleMediaError(e, activity.title, activity.category)}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-slate-400">

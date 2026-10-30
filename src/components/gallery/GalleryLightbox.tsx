@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { GalleryItem } from '../../types/gallery';
 import { Badge } from '../common/Badge';
+import { resolveMediaUrl } from '../../utils/mediaHelper';
 
 interface GalleryLightboxProps {
   item: GalleryItem | null;
@@ -218,7 +219,7 @@ export const GalleryLightbox: React.FC<GalleryLightboxProps> = ({
             </div>
           ) : (
             <img
-              src={item.imageUrl}
+              src={resolveMediaUrl(item.imageUrl)}
               alt={item.title}
               onLoad={() => setImageLoaded(true)}
               onError={() => setImageError(true)}

@@ -52,6 +52,7 @@ import { HomepageContentManager } from '../../components/admin/HomepageContentMa
 import { PermanentDeleteModal } from '../../components/admin/PermanentDeleteModal';
 import { activityService } from '../../services/activityService';
 import { galleryService } from '../../services/galleryService';
+import { resolveMediaUrl, handleMediaError } from '../../utils/mediaHelper';
 
 type TabKey =
   | 'overview'
@@ -1396,12 +1397,10 @@ const GalleryView: React.FC = () => {
                 <div key={photo.id} className="bg-[#F4FAFD] rounded-2xl border border-[#CFE3F0] overflow-hidden shadow-sm flex flex-col group hover:border-[#159E9A] transition-all">
                   <div className="h-44 bg-slate-100 overflow-hidden relative">
                     <img
-                      src={photo.imageUrl}
+                      src={resolveMediaUrl(photo.imageUrl)}
                       alt={photo.title}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      onError={(e) => {
-                        (e.target as HTMLElement).style.opacity = '0.3';
-                      }}
+                      onError={(e) => handleMediaError(e, photo.title, photo.category)}
                     />
                     <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#EAF5FB]/95 text-[#183153] border border-[#CFE3F0] shadow-xs">
@@ -1790,12 +1789,10 @@ const MediaLibraryView: React.FC = () => {
             <div key={item.id} className="bg-[#F4FAFD] rounded-2xl border border-[#CFE3F0] overflow-hidden shadow-xs flex flex-col group hover:border-[#159E9A] transition-all">
               <div className="aspect-4/3 bg-slate-100 overflow-hidden relative">
                 <img
-                  src={item.url}
+                  src={resolveMediaUrl(item.url)}
                   alt={item.title || item.filename}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.opacity = '0.3';
-                  }}
+                  onError={(e) => handleMediaError(e, item.title || item.filename, item.category)}
                 />
                 <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-black/60 text-white backdrop-blur-xs">
                   {item.category}
@@ -1972,12 +1969,10 @@ const DevelopersView: React.FC = () => {
           {developers.map((dev) => (
             <div key={dev.id} className="bg-[#F4FAFD] p-5 rounded-2xl border border-[#CFE3F0] shadow-sm flex gap-4 hover:border-[#159E9A] transition-all">
               <img
-                src={dev.avatarUrl}
+                src={resolveMediaUrl(dev.avatarUrl)}
                 alt={dev.fullName}
                 className="w-16 h-16 rounded-xl object-cover shrink-0 border border-[#D7E7F0]"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.opacity = '0.4';
-                }}
+                onError={(e) => handleMediaError(e, dev.fullName, 'Developer')}
               />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">

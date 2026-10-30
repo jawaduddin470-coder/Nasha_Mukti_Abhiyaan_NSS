@@ -6,6 +6,7 @@ Handles file uploads with strict MIME verification, size restrictions, and uniqu
 
 import os
 import uuid
+import base64
 from typing import Dict, Any
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
@@ -55,15 +56,34 @@ async def upload_image_file(
     ext = ALLOWED_MIME_TYPES[content_type]
     unique_filename = f"{datetime.now().strftime('%Y%m%d')}_{uuid.uuid4().hex[:12]}{ext}"
 
-    # Ensure upload directory exists
-    os.makedirs(settings.MEDIA_UPLOAD_DIR, exist_ok=True)
-    destination_path = os.path.join(settings.MEDIA_UPLOAD_DIR, unique_filename)
-
-    with open(destination_path, "wb") as f:
-        f.write(contents)
+    # Ensure upload directory exists and write file if filesystem is writable
+    try:
+        os.makedirs(settings.MEDIA_UPLOAD_DIR, exist_ok=True)
+        destination_path = os.path.join(settings.MEDIA_UPLOAD_DIR, unique_filename)
+        with open(destination_path, "wb") as f:
+            f.write(contents)
+    except Exception as e:
+        pass
 
     public_url = f"/uploads/{unique_filename}"
     now_iso = datetime.now(timezone.utc).isoformat()
+
+    # Persist binary data in MongoDB uploaded_images for serverless permanence
+    b64_data = base64.b64encode(contents).decode("utf-8")
+    await db["uploaded_images"].update_one(
+        {"filename": unique_filename},
+        {
+            "$set": {
+                "filename": unique_filename,
+                "contentType": content_type,
+                "mimeType": content_type,
+                "sizeBytes": len(contents),
+                "data": b64_data,
+                "uploadedAt": now_iso,
+            }
+        },
+        upsert=True,
+    )
 
     # Log record in database
     await record_audit_log(

@@ -19,12 +19,13 @@ if "backend" not in sys.modules:
 
 from contextlib import asynccontextmanager
 import logging
-from fastapi import FastAPI, status
+import base64
+from fastapi import FastAPI, status, Depends, HTTPException
+from fastapi.responses import FileResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-
+from motor.motor_asyncio import AsyncIOMotorDatabase
 from backend.app.core.config import settings
-from backend.app.db.mongodb import connect_to_mongo, close_mongo_connection, db_manager
+from backend.app.db.mongodb import connect_to_mongo, close_mongo_connection, db_manager, get_database
 from backend.app.db.indexes import create_indexes
 from backend.app.routers import (
     auth,
@@ -98,13 +99,60 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files directory for media uploads with safe fallback for read-only serverless filesystems
-try:
-    uploads_dir = "/tmp/uploads" if os.environ.get("VERCEL") else os.path.abspath(settings.MEDIA_UPLOAD_DIR)
-    os.makedirs(uploads_dir, exist_ok=True)
-    app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
-except Exception as e:
-    logger.warning(f"Static /uploads mount skipped: {e}")
+# Resilient image serving handler with filesystem and MongoDB binary fallback
+@app.get("/uploads/{filename:path}", tags=["Media"])
+@app.get("/api/v1/uploads/{filename:path}", tags=["Media"])
+async def serve_uploaded_media(
+    filename: str,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Serves uploaded and static assets reliably across serverless environments.
+    Checks candidate local filesystem directories first, falling back to
+    MongoDB 'uploaded_images' binary persistence for ephemeral lambda instances.
+    """
+    clean_filename = os.path.basename(filename)
+    if not clean_filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    # 1. Search candidate directories on filesystem
+    candidate_dirs = [
+        "/tmp/uploads",
+        os.path.abspath(settings.MEDIA_UPLOAD_DIR),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "../uploads")),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "../../uploads")),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "../../public/uploads")),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "../../public")),
+    ]
+    for directory in candidate_dirs:
+        file_path = os.path.join(directory, clean_filename)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path, headers={"Cache-Control": "public, max-age=31536000, immutable"})
+
+    # 2. Query MongoDB uploaded_images for database-backed persistence
+    if db is not None:
+        try:
+            doc = await db["uploaded_images"].find_one({"filename": clean_filename})
+            if doc and "data" in doc:
+                raw_data = doc["data"]
+                if isinstance(raw_data, str):
+                    raw_data = base64.b64decode(raw_data)
+                content_type = doc.get("contentType") or doc.get("mimeType")
+                if not content_type:
+                    ext = os.path.splitext(clean_filename)[1].lower()
+                    content_type = "image/png" if ext == ".png" else "image/webp" if ext == ".webp" else "image/jpeg"
+                return Response(
+                    content=raw_data,
+                    media_type=content_type,
+                    headers={
+                        "Cache-Control": "public, max-age=31536000, immutable",
+                        "Content-Disposition": f'inline; filename="{clean_filename}"',
+                    },
+                )
+        except Exception as e:
+            logger.warning(f"Error serving {clean_filename} from MongoDB: {e}")
+
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
 
 
 # Health & Readiness Endpoints
