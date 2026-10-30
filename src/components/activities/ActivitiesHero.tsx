@@ -1,7 +1,8 @@
 import React from 'react';
-import { Search, Calendar, Users, Award, Shield, X, Filter, CheckCircle2 } from 'lucide-react';
+import { Search, Calendar, Users, Award, Shield, X, Filter } from 'lucide-react';
 import { ActivityCategoryMeta, ActivityStats } from '../../types/activity';
 import { ScrollReveal } from '../common/ScrollReveal';
+import { CampaignImpactShowcase } from './CampaignImpactShowcase';
 
 interface ActivitiesHeroProps {
   categories: ActivityCategoryMeta[];
@@ -47,38 +48,10 @@ export const ActivitiesHero: React.FC<ActivitiesHeroProps> = ({
           </ScrollReveal>
         </div>
 
-        {/* Right Column: Layered Photographic Collage */}
-        <div className="lg:col-span-5 relative">
+        {/* Right Column: Strategic Campaign Impact Showcase (Zero Hardcoded Photos) */}
+        <div className="lg:col-span-5 relative w-full overflow-hidden sm:overflow-visible">
           <ScrollReveal direction="up" delayMs={100}>
-            <div className="relative h-64 sm:h-72 w-full max-w-md mx-auto">
-              {/* Back Card (Angled Left) */}
-              <div className="absolute top-2 left-2 w-48 sm:w-56 aspect-[4/3] rounded-2xl overflow-hidden shadow-lg border-2 border-white dark:border-[#14243D] rotate-[-6deg] opacity-80 hover:rotate-0 transition-transform duration-300">
-                <img
-                  src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?q=80&w=600&auto=format&fit=crop"
-                  alt="Student solidarity gathering"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              {/* Front Card (Dominant, Center) */}
-              <div className="absolute top-8 right-2 sm:right-6 w-56 sm:w-64 aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl border-4 border-white dark:border-[#14243D] rotate-[4deg] hover:rotate-0 transition-transform duration-300 z-10">
-                <img
-                  src="https://images.unsplash.com/photo-1544928147-79a2dbc1f389?q=80&w=800&auto=format&fit=crop"
-                  alt="Campus awareness march"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-2 left-2 right-2 p-2 rounded-xl bg-[#0B1524]/85 backdrop-blur-md text-white text-[11px] flex items-center justify-between">
-                  <span className="font-bold">Walkathon 2026</span>
-                  <span className="text-[#5EEAD4] font-mono">NSS MJCET</span>
-                </div>
-              </div>
-
-              {/* Floating Verified Badge */}
-              <div className="absolute bottom-0 left-6 z-20 px-3 py-2 rounded-xl bg-[#EAF5FB] dark:bg-[#14243D] border border-[#CFE3F0] dark:border-[#243A5E] shadow-soft-card flex items-center gap-2 text-xs font-semibold text-[#183153] dark:text-slate-200">
-                <CheckCircle2 className="w-4 h-4 text-[#239B70]" />
-                <span>Zero Retribution Policy</span>
-              </div>
-            </div>
+            <CampaignImpactShowcase stats={stats} />
           </ScrollReveal>
         </div>
       </div>

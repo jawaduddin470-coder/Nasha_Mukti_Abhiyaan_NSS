@@ -55,25 +55,25 @@ export const Header: React.FC = () => {
         {/* Brand / Logo Group: Refined Institutional Lockup */}
         <Link
           to="/"
-          className="flex items-center gap-3 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#159E9A] rounded-xl p-1 shrink-0"
+          className="flex items-center gap-2 sm:gap-3 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#159E9A] rounded-xl p-1 min-w-0"
           aria-label="NSS MJCET Nasha Mukti Abhiyaan Home"
         >
-          <div className="relative">
+          <div className="relative shrink-0">
             <img
               src="/assets/branding/nss-logo.png"
               alt="Official National Service Scheme Seal"
-              className="w-10 h-10 sm:w-11 sm:h-11 object-contain transition-transform duration-300 group-hover:scale-105 shrink-0 filter drop-shadow-xs"
+              className="w-9 h-9 sm:w-11 sm:h-11 object-contain transition-transform duration-300 group-hover:scale-105 filter drop-shadow-xs"
             />
             {/* Subtle national saffron indicator dot */}
             <span
-              className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#F3A54A] border-2 border-[#E8F3FA] dark:border-[#0B1524]"
+              className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#F3A54A] border-2 border-[#E8F3FA] dark:border-[#0B1524]"
               aria-hidden="true"
             />
           </div>
 
-          <div className="flex flex-col text-left">
+          <div className="flex flex-col text-left min-w-0">
             <div className="flex items-center gap-1.5 leading-none">
-              <span className="text-[11px] uppercase font-extrabold tracking-wider text-[#183153] dark:text-[#B9DDF5] font-sans">
+              <span className="text-[10px] sm:text-[11px] uppercase font-extrabold tracking-wider text-[#183153] dark:text-[#B9DDF5] font-sans">
                 NSS MJCET
               </span>
               <span className="text-slate-400 text-[10px] hidden sm:inline">&bull;</span>
@@ -81,7 +81,7 @@ export const Header: React.FC = () => {
                 Osmania University
               </span>
             </div>
-            <span className="text-base sm:text-lg font-bold text-[#183153] dark:text-white font-serif tracking-tight group-hover:text-[#159E9A] dark:group-hover:text-[#5EEAD4] transition-colors leading-tight mt-0.5 whitespace-nowrap">
+            <span className="text-xs sm:text-base md:text-lg font-bold text-[#183153] dark:text-white font-serif tracking-tight group-hover:text-[#159E9A] dark:group-hover:text-[#5EEAD4] transition-colors leading-tight mt-0.5 truncate sm:whitespace-nowrap">
               Nasha Mukti Abhiyaan
             </span>
           </div>
@@ -217,11 +217,11 @@ export const Header: React.FC = () => {
             <span className="text-[11px] font-mono font-bold text-[#183153] dark:text-white">14446</span>
           </a>
 
-          {/* Mobile Replay Intro Icon */}
+          {/* Mobile Replay Intro Icon (Preserved on tablet/desktop, accessible via drawer on mobile) */}
           <button
             type="button"
             onClick={playIntro}
-            className="p-2.5 min-w-[40px] min-h-[40px] rounded-xl border border-[#D7E7F0] dark:border-[#243A5E] text-[#159E9A] hover:bg-[#EAF6FC] dark:hover:bg-[#172B48] flex items-center justify-center transition-colors active:scale-95"
+            className="hidden sm:flex p-2.5 min-w-[40px] min-h-[40px] rounded-xl border border-[#D7E7F0] dark:border-[#243A5E] text-[#159E9A] hover:bg-[#EAF6FC] dark:hover:bg-[#172B48] items-center justify-center transition-colors active:scale-95"
             title="Replay Cinematic Intro"
             aria-label="Replay Cinematic Intro"
           >
