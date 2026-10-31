@@ -141,7 +141,8 @@ class QuizService {
   async submitQuizAttempt(
     quiz: Quiz,
     participant: ParticipantRegistration,
-    userAnswers: Record<string, string[]>
+    userAnswers: Record<string, string[]>,
+    timeTakenSeconds?: number
   ): Promise<QuizResult> {
     try {
       const serverResult = await apiClient.post<any>('/quiz/submit', {
@@ -157,6 +158,7 @@ class QuizService {
           consentDataProcessing: participant.consentDataProcessing,
         },
         userAnswers,
+        timeTakenSeconds: timeTakenSeconds && timeTakenSeconds > 0 ? timeTakenSeconds : undefined,
       });
 
       if (serverResult && serverResult.attemptId) {

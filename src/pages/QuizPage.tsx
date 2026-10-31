@@ -51,7 +51,7 @@ export const QuizPage: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSubmitQuiz = async (userAnswers: Record<string, string[]>) => {
+  const handleSubmitQuiz = async (userAnswers: Record<string, string[]>, timeTakenSeconds?: number) => {
     if (!quiz || !participant) return;
 
     try {
@@ -60,7 +60,8 @@ export const QuizPage: React.FC = () => {
       const computedResult = await quizService.submitQuizAttempt(
         quiz,
         participant,
-        userAnswers
+        userAnswers,
+        timeTakenSeconds
       );
       setResult(computedResult);
       setStep('results');

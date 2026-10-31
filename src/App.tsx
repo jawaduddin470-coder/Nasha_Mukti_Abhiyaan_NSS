@@ -10,6 +10,7 @@ import { ActivitiesPage } from './pages/ActivitiesPage';
 import { GalleryPage } from './pages/GalleryPage';
 import { SupportPage } from './pages/SupportPage';
 import { QuizPage } from './pages/QuizPage';
+import { LeaderboardPage } from './pages/LeaderboardPage';
 import { DevelopersPage } from './pages/DevelopersPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { AdminLoginPage } from './pages/admin/AdminLoginPage';
@@ -52,6 +53,8 @@ export const App: React.FC = () => {
                 <Route path="events" element={<ActivitiesPage />} />
                 <Route path="gallery" element={<GalleryPage />} />
                 <Route path="quiz" element={<QuizPage />} />
+                <Route path="leaderboard" element={<LeaderboardPage />} />
+                <Route path="quiz/leaderboard" element={<LeaderboardPage />} />
                 <Route path="support" element={<SupportPage />} />
                 <Route path="developers" element={<DevelopersPage />} />
                 <Route path="*" element={<NotFoundPage />} />

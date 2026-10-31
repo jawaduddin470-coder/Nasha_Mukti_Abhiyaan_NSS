@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import {
   ShieldCheck,
   Award,
@@ -7,6 +8,7 @@ import {
   ArrowRight,
   Sparkles,
   CheckCircle2,
+  Trophy,
 } from 'lucide-react';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
@@ -70,7 +72,7 @@ export const QuizWelcome: React.FC<QuizWelcomeProps> = ({
             </p>
           </div>
 
-          <div className="shrink-0 flex flex-col gap-2.5">
+          <div className="shrink-0 flex flex-col sm:flex-row md:flex-col gap-2.5">
             <Button
               variant="teal"
               size="lg"
@@ -80,6 +82,13 @@ export const QuizWelcome: React.FC<QuizWelcomeProps> = ({
             >
               Register &amp; Begin Quiz
             </Button>
+            <Link
+              to="/leaderboard"
+              className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-[#CFE3F0] dark:border-[#243A5E] bg-white/80 dark:bg-[#152744] hover:bg-[#EAF6FC] dark:hover:bg-[#1E3B63] text-xs sm:text-sm font-semibold text-[#183153] dark:text-white transition-all shadow-xs"
+            >
+              <Trophy className="w-4 h-4 text-amber-500" />
+              <span>The Champions Board</span>
+            </Link>
           </div>
         </div>
 

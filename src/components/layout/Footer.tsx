@@ -105,6 +105,10 @@ export const Footer: React.FC = () => {
                 <Link to="/quiz" className="text-slate-300 hover:text-[#5EEAD4] transition-colors">
                   Awareness Quiz
                 </Link>
+                <Link to="/leaderboard" className="text-slate-300 hover:text-[#5EEAD4] transition-colors flex items-center gap-1.5">
+                  <span>The Champions Board</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300">Results</span>
+                </Link>
                 <Link to="/support" className="text-slate-300 hover:text-[#5EEAD4] transition-colors">
                   Support Resources
                 </Link>

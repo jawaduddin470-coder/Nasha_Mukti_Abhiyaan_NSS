@@ -24,6 +24,13 @@ from backend.app.schemas.quiz import (
     QuizAttemptSubmit,
     QuizAttemptResult,
     QuestionBreakdownItem,
+    LeaderboardEntryPublic,
+    LeaderboardPublicResponse,
+    LeaderboardSummaryItem,
+    LeaderboardEntryAdmin,
+    LeaderboardAdminResponse,
+    LeaderboardSettingsUpdate,
+    AttemptOverrideRequest,
 )
 from backend.app.utils.audit import record_audit_log
 
@@ -159,6 +166,7 @@ async def submit_quiz_attempt(
         "summaryMessage": summary_msg,
         "submittedAt": now_iso,
         "userAnswers": payload.userAnswers,
+        "timeTakenSeconds": payload.timeTakenSeconds,
     }
 
     # Save to MongoDB quiz_attempts collection
@@ -181,6 +189,7 @@ async def submit_quiz_attempt(
         badgeDescription=badge_desc,
         summaryMessage=summary_msg,
         questionBreakdown=question_breakdown,
+        timeTakenSeconds=payload.timeTakenSeconds,
     )
 
 
@@ -440,3 +449,486 @@ async def export_quiz_attempts_excel(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
+
+# =========================================================================
+# Quiz Leaderboard Helpers & Endpoints
+# =========================================================================
+
+QUIZ_REGISTRY = {
+    "nmba-awareness-challenge-v1": {
+        "id": "nmba-awareness-challenge-v1",
+        "title": "Nasha Mukti Awareness Quiz",
+        "slug": "nasha-mukti-awareness",
+        "aliases": ["nmba-awareness-challenge-v1", "nasha-mukti-awareness", "awareness"],
+    },
+    "national-unity-day-quiz-v1": {
+        "id": "national-unity-day-quiz-v1",
+        "title": "National Unity Day Quiz",
+        "slug": "national-unity-day",
+        "aliases": ["national-unity-day-quiz-v1", "national-unity-day", "unity", "unity-day"],
+    },
+}
+
+
+def resolve_quiz_meta(identifier: str) -> Dict[str, Any]:
+    """Resolves quiz identifier or slug to standard quiz metadata."""
+    clean_id = identifier.strip().lower()
+    for meta in QUIZ_REGISTRY.values():
+        if clean_id == meta["id"].lower() or clean_id == meta["slug"].lower() or clean_id in [a.lower() for a in meta["aliases"]]:
+            return meta
+    return {
+        "id": identifier,
+        "title": identifier.replace("-", " ").title(),
+        "slug": identifier.lower(),
+        "aliases": [identifier],
+    }
+
+
+def format_duration_string(seconds: Optional[int]) -> str:
+    """Formats seconds into readable MM:SS or human string."""
+    if seconds is None or seconds <= 0:
+        return "—"
+    m = seconds // 60
+    s = seconds % 60
+    if m > 0:
+        return f"{m}m {s:02d}s" if s > 0 else f"{m}m"
+    return f"{s}s"
+
+
+def mask_participant_name(name: str) -> str:
+    """Masks participant name for privacy when configured."""
+    parts = name.strip().split()
+    if not parts:
+        return "Participant"
+    masked = []
+    for p in parts:
+        if len(p) <= 2:
+            masked.append(p[0] + "*")
+        else:
+            masked.append(p[0] + ("*" * (len(p) - 1)))
+    return " ".join(masked)
+
+
+async def get_or_create_leaderboard_record(
+    db: AsyncIOMotorDatabase,
+    quiz_meta: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Retrieves or initializes the persistent leaderboard configuration document."""
+    quiz_id = quiz_meta["id"]
+    record = await db["quiz_leaderboards"].find_one({"quizId": quiz_id})
+    if not record:
+        now_iso = datetime.now(timezone.utc).isoformat()
+        record = {
+            "quizId": quiz_id,
+            "quizTitle": quiz_meta["title"],
+            "quizSlug": quiz_meta["slug"],
+            "isPublished": False,
+            "status": "coming_soon",
+            "publishedAt": None,
+            "publishedBy": None,
+            "announcementDate": None,
+            "showPublicNames": True,
+            "highlightTopThree": True,
+            "customNote": "Official results authenticated by NSS MJCET Examination Authority.",
+            "createdAt": now_iso,
+            "updatedAt": now_iso,
+        }
+        await db["quiz_leaderboards"].insert_one(record)
+    return record
+
+
+async def compute_quiz_rankings(
+    db: AsyncIOMotorDatabase,
+    quiz_meta: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    """
+    Computes authoritative rankings from genuine MongoDB quiz_attempts:
+    1. Highest score first (-score).
+    2. Shorter completion time ranks higher (ascending seconds).
+    3. Handles exact ties transparently.
+    """
+    query_ids = quiz_meta.get("aliases", [quiz_meta["id"]])
+    cursor = db["quiz_attempts"].find({"quizId": {"$in": query_ids}})
+    attempts = []
+    async for a in cursor:
+        attempts.append(a)
+
+    def rank_key(doc):
+        score = doc.get("score", 0)
+        time_sec = doc.get("timeTakenSeconds")
+        if time_sec is None or time_sec <= 0:
+            time_val = 999999
+        else:
+            time_val = time_sec
+        sub = doc.get("submittedAt", "")
+        return (-score, time_val, sub)
+
+    attempts.sort(key=rank_key)
+
+    ranked_items = []
+    current_rank = 0
+    prev_score = None
+    prev_time = None
+
+    for idx, doc in enumerate(attempts):
+        score = doc.get("score", 0)
+        time_sec = doc.get("timeTakenSeconds")
+
+        is_tie = (prev_score is not None and score == prev_score and time_sec == prev_time)
+        if is_tie:
+            rank = current_rank
+        else:
+            current_rank = idx + 1
+            rank = current_rank
+            prev_score = score
+            prev_time = time_sec
+
+        part = doc.get("participant", {})
+        ranked_items.append({
+            "rank": rank,
+            "attemptId": doc.get("attemptId", f"atmpt-{idx}"),
+            "participantName": part.get("fullName", "Participant").strip(),
+            "participantEmail": part.get("email", ""),
+            "participantInstitution": part.get("institutionName", "MJCET").strip(),
+            "rollNumber": part.get("rollNumber", ""),
+            "phone": part.get("phone", ""),
+            "department": part.get("department", ""),
+            "yearOfStudy": part.get("yearOfStudy", ""),
+            "score": score,
+            "maxScore": doc.get("maxScore", 100),
+            "percentage": doc.get("percentage", 0),
+            "passed": doc.get("passed", False),
+            "timeTakenSeconds": time_sec,
+            "timeFormatted": format_duration_string(time_sec),
+            "badgeName": doc.get("badgeName", "Participant"),
+            "submittedAt": doc.get("submittedAt", ""),
+        })
+
+    return ranked_items
+
+
+@router.get("/quiz/leaderboards", response_model=List[LeaderboardSummaryItem])
+async def list_public_quiz_leaderboards(
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """Returns overview of public leaderboards for all active campaign quizzes."""
+    results = []
+    for q_key, meta in QUIZ_REGISTRY.items():
+        cfg = await get_or_create_leaderboard_record(db, meta)
+        count = await db["quiz_attempts"].count_documents({"quizId": {"$in": meta["aliases"]}})
+        results.append(
+            LeaderboardSummaryItem(
+                quizId=meta["id"],
+                quizTitle=meta["title"],
+                quizSlug=meta["slug"],
+                isPublished=cfg.get("isPublished", False),
+                status="published" if cfg.get("isPublished", False) else "coming_soon",
+                totalParticipants=count,
+                announcementDate=cfg.get("announcementDate"),
+            )
+        )
+    return results
+
+
+@router.get("/quiz/leaderboard/{quiz_id}", response_model=LeaderboardPublicResponse)
+async def get_public_quiz_leaderboard(
+    quiz_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Public leaderboard endpoint for a specific quiz.
+    STRICT SECURITY:
+    If results are unpublished (isPublished == False), returns announcement state
+    with 'entries = []'. Scores and rankings remain completely hidden.
+    """
+    meta = resolve_quiz_meta(quiz_id)
+    cfg = await get_or_create_leaderboard_record(db, meta)
+    is_published = cfg.get("isPublished", False)
+
+    total_participants = await db["quiz_attempts"].count_documents({"quizId": {"$in": meta["aliases"]}})
+
+    if not is_published:
+        return LeaderboardPublicResponse(
+            quizId=meta["id"],
+            quizTitle=meta["title"],
+            quizSlug=meta["slug"],
+            isPublished=False,
+            status="coming_soon",
+            message="RESULTS COMING SOON",
+            supportingText=(
+                "The quiz has concluded. Our team is preparing the official results. "
+                "Stay tuned as we get ready to celebrate the participants and announce the champions."
+            ),
+            announcementDate=cfg.get("announcementDate"),
+            customNote=cfg.get("customNote"),
+            showPublicNames=cfg.get("showPublicNames", True),
+            highlightTopThree=cfg.get("highlightTopThree", True),
+            totalParticipants=total_participants,
+            publishedAt=None,
+            entries=[],
+        )
+
+    # Published state: compute official leaderboard
+    ranked = await compute_quiz_rankings(db, meta)
+    show_names = cfg.get("showPublicNames", True)
+
+    public_entries: List[LeaderboardEntryPublic] = []
+    for item in ranked:
+        name = item["participantName"] if show_names else mask_participant_name(item["participantName"])
+        public_entries.append(
+            LeaderboardEntryPublic(
+                rank=item["rank"],
+                attemptId=item["attemptId"],
+                participantName=name,
+                participantInstitution=item["participantInstitution"],
+                score=item["score"],
+                maxScore=item["maxScore"],
+                percentage=item["percentage"],
+                timeTakenSeconds=item["timeTakenSeconds"],
+                timeFormatted=item["timeFormatted"],
+                badgeName=item["badgeName"],
+                submittedAt=item["submittedAt"],
+            )
+        )
+
+    return LeaderboardPublicResponse(
+        quizId=meta["id"],
+        quizTitle=meta["title"],
+        quizSlug=meta["slug"],
+        isPublished=True,
+        status="published",
+        message="OFFICIAL RESULTS PUBLISHED",
+        supportingText="Official certified rankings authenticated by NSS MJCET Examination Authority.",
+        announcementDate=cfg.get("announcementDate"),
+        customNote=cfg.get("customNote"),
+        showPublicNames=show_names,
+        highlightTopThree=cfg.get("highlightTopThree", True),
+        totalParticipants=total_participants,
+        publishedAt=cfg.get("publishedAt"),
+        entries=public_entries,
+    )
+
+
+# =========================================================================
+# Protected Admin Leaderboard Endpoints
+# =========================================================================
+
+@router.get("/admin/quiz/leaderboard/{quiz_id}", response_model=LeaderboardAdminResponse)
+async def get_admin_quiz_leaderboard(
+    quiz_id: str,
+    current_admin: Dict[str, Any] = Depends(require_editor_or_above),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Returns full admin preview of calculated leaderboard for any quiz.
+    Available to Editors and Super Admins for verification.
+    """
+    meta = resolve_quiz_meta(quiz_id)
+    cfg = await get_or_create_leaderboard_record(db, meta)
+    ranked = await compute_quiz_rankings(db, meta)
+
+    total_participants = len(ranked)
+    avg_score = round(sum(r["score"] for r in ranked) / total_participants, 1) if total_participants > 0 else 0
+    highest_score = max((r["score"] for r in ranked), default=0)
+    passed_count = sum(1 for r in ranked if r["passed"])
+
+    admin_entries: List[LeaderboardEntryAdmin] = [
+        LeaderboardEntryAdmin(**item) for item in ranked
+    ]
+
+    return LeaderboardAdminResponse(
+        quizId=meta["id"],
+        quizTitle=meta["title"],
+        quizSlug=meta["slug"],
+        isPublished=cfg.get("isPublished", False),
+        status="published" if cfg.get("isPublished", False) else "draft",
+        publishedAt=cfg.get("publishedAt"),
+        publishedBy=cfg.get("publishedBy"),
+        announcementDate=cfg.get("announcementDate"),
+        showPublicNames=cfg.get("showPublicNames", True),
+        highlightTopThree=cfg.get("highlightTopThree", True),
+        customNote=cfg.get("customNote"),
+        totalParticipants=total_participants,
+        entries=admin_entries,
+        stats={
+            "totalParticipants": total_participants,
+            "highestScore": highest_score,
+            "averageScore": avg_score,
+            "passedCount": passed_count,
+            "passingRate": round((passed_count / total_participants) * 100, 1) if total_participants > 0 else 0,
+        },
+    )
+
+
+@router.post("/admin/quiz/leaderboard/{quiz_id}/publish")
+async def publish_quiz_leaderboard(
+    quiz_id: str,
+    current_admin: Dict[str, Any] = Depends(require_super_admin),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Authoritative publication of official quiz leaderboard.
+    STRICT RBAC: Only Super Admins can publish results live to public users.
+    """
+    meta = resolve_quiz_meta(quiz_id)
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    await db["quiz_leaderboards"].update_one(
+        {"quizId": meta["id"]},
+        {
+            "$set": {
+                "quizTitle": meta["title"],
+                "quizSlug": meta["slug"],
+                "isPublished": True,
+                "status": "published",
+                "publishedAt": now_iso,
+                "publishedBy": current_admin["email"],
+                "updatedAt": now_iso,
+            }
+        },
+        upsert=True,
+    )
+
+    await record_audit_log(
+        db,
+        actor_email=current_admin["email"],
+        action="publish_quiz_leaderboard",
+        module="quiz_leaderboard",
+        record_id=meta["id"],
+        metadata={"quizTitle": meta["title"]},
+    )
+
+    return {
+        "success": True,
+        "message": f"Official results for '{meta['title']}' published live successfully.",
+        "publishedAt": now_iso,
+        "publishedBy": current_admin["email"],
+    }
+
+
+@router.post("/admin/quiz/leaderboard/{quiz_id}/unpublish")
+async def unpublish_quiz_leaderboard(
+    quiz_id: str,
+    current_admin: Dict[str, Any] = Depends(require_super_admin),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Retracts public leaderboard and returns to 'Results Coming Soon' state.
+    STRICT RBAC: Only Super Admins can retract published results.
+    """
+    meta = resolve_quiz_meta(quiz_id)
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    await db["quiz_leaderboards"].update_one(
+        {"quizId": meta["id"]},
+        {
+            "$set": {
+                "isPublished": False,
+                "status": "coming_soon",
+                "updatedAt": now_iso,
+            }
+        },
+        upsert=True,
+    )
+
+    await record_audit_log(
+        db,
+        actor_email=current_admin["email"],
+        action="unpublish_quiz_leaderboard",
+        module="quiz_leaderboard",
+        record_id=meta["id"],
+        metadata={"quizTitle": meta["title"]},
+    )
+
+    return {
+        "success": True,
+        "message": f"Official results for '{meta['title']}' have been retracted to 'Coming Soon'.",
+    }
+
+
+@router.put("/admin/quiz/leaderboard/{quiz_id}/settings")
+async def update_quiz_leaderboard_settings(
+    quiz_id: str,
+    payload: LeaderboardSettingsUpdate,
+    current_admin: Dict[str, Any] = Depends(require_super_admin),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """Updates presentation settings (announcement date, public names, top 3 highlight)."""
+    meta = resolve_quiz_meta(quiz_id)
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    update_fields: Dict[str, Any] = {"updatedAt": now_iso}
+    if payload.announcementDate is not None:
+        update_fields["announcementDate"] = payload.announcementDate.strip()
+    if payload.showPublicNames is not None:
+        update_fields["showPublicNames"] = payload.showPublicNames
+    if payload.highlightTopThree is not None:
+        update_fields["highlightTopThree"] = payload.highlightTopThree
+    if payload.customNote is not None:
+        update_fields["customNote"] = payload.customNote.strip()
+
+    await db["quiz_leaderboards"].update_one(
+        {"quizId": meta["id"]},
+        {"$set": update_fields},
+        upsert=True,
+    )
+
+    await record_audit_log(
+        db,
+        actor_email=current_admin["email"],
+        action="update_quiz_leaderboard_settings",
+        module="quiz_leaderboard",
+        record_id=meta["id"],
+        metadata=update_fields,
+    )
+
+    return {"success": True, "message": "Leaderboard settings updated successfully."}
+
+
+@router.put("/admin/quiz/attempts/{attempt_id}/override")
+async def override_quiz_attempt(
+    attempt_id: str,
+    payload: AttemptOverrideRequest,
+    current_admin: Dict[str, Any] = Depends(require_super_admin),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Authoritative administrative override for participant score, duration, or identity correction.
+    STRICT RBAC: Only Super Admins can alter recorded attempt results.
+    """
+    target = await db["quiz_attempts"].find_one({"attemptId": attempt_id})
+    if not target:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Attempt '{attempt_id}' was not found in records.",
+        )
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    update_doc: Dict[str, Any] = {"updatedAt": now_iso, "lastModifiedBy": current_admin["email"]}
+
+    if payload.score is not None:
+        update_doc["score"] = payload.score
+        max_s = target.get("maxScore", 100)
+        pct = round((payload.score / max_s) * 100) if max_s > 0 else 0
+        update_doc["percentage"] = pct
+        update_doc["passed"] = pct >= 70
+    if payload.timeTakenSeconds is not None:
+        update_doc["timeTakenSeconds"] = payload.timeTakenSeconds
+    if payload.participantName is not None and payload.participantName.strip():
+        update_doc["participant.fullName"] = payload.participantName.strip()
+    if payload.notes:
+        update_doc["adminNotes"] = payload.notes.strip()
+
+    await db["quiz_attempts"].update_one({"attemptId": attempt_id}, {"$set": update_doc})
+
+    await record_audit_log(
+        db,
+        actor_email=current_admin["email"],
+        action="override_quiz_attempt",
+        module="quiz_attempts",
+        record_id=attempt_id,
+        metadata={"changes": list(update_doc.keys()), "actor": current_admin["email"]},
+    )
+
+    return {"success": True, "message": f"Attempt '{attempt_id}' updated successfully."}

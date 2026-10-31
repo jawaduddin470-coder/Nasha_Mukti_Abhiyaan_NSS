@@ -38,6 +38,7 @@ import {
   AlertCircle,
   Loader2,
   Check,
+  Trophy,
   Archive,
   RotateCcw,
   Sliders,
@@ -49,6 +50,7 @@ import { MediaPickerInput } from '../../components/admin/MediaPickerInput';
 import { MediaLibraryModal } from '../../components/admin/MediaLibraryModal';
 import { MediaItem, fetchMediaItems, deleteMediaAsset } from '../../services/mediaService';
 import { HomepageContentManager } from '../../components/admin/HomepageContentManager';
+import { QuizLeaderboardManager } from '../../components/admin/QuizLeaderboardManager';
 import { PermanentDeleteModal } from '../../components/admin/PermanentDeleteModal';
 import { activityService } from '../../services/activityService';
 import { galleryService } from '../../services/galleryService';
@@ -62,6 +64,7 @@ type TabKey =
   | 'media'
   | 'developers'
   | 'participants'
+  | 'quiz_leaderboard'
   | 'quiz_questions'
   | 'awareness_messages'
   | 'users'
@@ -223,6 +226,18 @@ export const AdminDashboardPage: React.FC = () => {
           </button>
 
           <button
+            onClick={() => handleTabChange('quiz_leaderboard')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all cursor-pointer ${
+              activeTab === 'quiz_leaderboard'
+                ? 'bg-[#159E9A] text-white font-semibold shadow-md'
+                : 'text-white/75 hover:bg-[#1E3B63] hover:text-white'
+            }`}
+          >
+            <Trophy className="w-4 h-4 text-amber-400" />
+            <span>Quiz Leaderboard</span>
+          </button>
+
+          <button
             onClick={() => handleTabChange('quiz_questions')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${
               activeTab === 'quiz_questions'
@@ -323,6 +338,7 @@ export const AdminDashboardPage: React.FC = () => {
         {activeTab === 'media' && <MediaLibraryView />}
         {activeTab === 'developers' && <DevelopersView />}
         {activeTab === 'participants' && <QuizParticipantsView isSuperAdmin={isSuperAdmin} />}
+        {activeTab === 'quiz_leaderboard' && <QuizLeaderboardManager isSuperAdmin={isSuperAdmin} />}
         {activeTab === 'quiz_questions' && <QuizQuestionsView isSuperAdmin={isSuperAdmin} />}
         {activeTab === 'awareness_messages' && <AwarenessMessagesView isSuperAdmin={isSuperAdmin} />}
         {activeTab === 'users' && isSuperAdmin && <UsersView />}

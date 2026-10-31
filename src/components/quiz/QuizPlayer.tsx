@@ -18,7 +18,7 @@ import { useTheme } from '../../context/ThemeContext';
 interface QuizPlayerProps {
   quiz: Quiz;
   participant: ParticipantRegistration;
-  onSubmit: (userAnswers: Record<string, string[]>) => void;
+  onSubmit: (userAnswers: Record<string, string[]>, timeTakenSeconds?: number) => void;
   isSubmitting?: boolean;
 }
 
@@ -322,7 +322,7 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
           setIsReviewOpen(false);
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
-        onSubmitQuiz={() => onSubmit(userAnswers)}
+        onSubmitQuiz={() => onSubmit(userAnswers, secondsElapsed)}
         isSubmitting={isSubmitting}
       />
     </div>

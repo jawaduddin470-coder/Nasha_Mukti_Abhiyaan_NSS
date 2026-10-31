@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
+  Trophy,
 } from 'lucide-react';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
@@ -152,6 +153,14 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
             >
               Print / Save Summary
             </Button>
+
+            <Link
+              to="/leaderboard"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#EAF5FB] dark:bg-[#1A3153] border border-[#CFE3F0] dark:border-[#243A5E] text-[#183153] dark:text-white hover:bg-[#DDF3F0] dark:hover:bg-[#203D67] transition-colors"
+            >
+              <Trophy className="w-3.5 h-3.5 text-amber-500" />
+              <span>The Champions Board</span>
+            </Link>
           </div>
         </div>
       </Card>

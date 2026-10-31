@@ -3,7 +3,7 @@ Quiz Questions & Attempts Pydantic Schemas
 NSS MJCET Nasha Mukti Abhiyaan
 """
 
-from typing import List, Dict, Optional, Literal
+from typing import List, Dict, Optional, Literal, Any
 from pydantic import BaseModel, Field, EmailStr, model_validator
 
 
@@ -111,6 +111,7 @@ class QuizAttemptSubmit(BaseModel):
     quizId: str
     participant: ParticipantData
     userAnswers: Dict[str, List[str]]
+    timeTakenSeconds: Optional[int] = None
 
 
 class QuestionBreakdownItem(BaseModel):
@@ -144,3 +145,100 @@ class QuizAttemptResult(BaseModel):
     badgeDescription: str
     summaryMessage: str
     questionBreakdown: List[QuestionBreakdownItem]
+    timeTakenSeconds: Optional[int] = None
+
+
+# =========================================================================
+# Quiz Leaderboard Schemas
+# =========================================================================
+
+class LeaderboardEntryPublic(BaseModel):
+    rank: int
+    attemptId: str
+    participantName: str
+    participantInstitution: str
+    score: int
+    maxScore: int
+    percentage: int
+    timeTakenSeconds: Optional[int] = None
+    timeFormatted: str
+    badgeName: str
+    submittedAt: str
+
+
+class LeaderboardPublicResponse(BaseModel):
+    quizId: str
+    quizTitle: str
+    quizSlug: str
+    isPublished: bool
+    status: Literal["coming_soon", "published"]
+    message: str
+    supportingText: str
+    announcementDate: Optional[str] = None
+    customNote: Optional[str] = None
+    showPublicNames: bool = True
+    highlightTopThree: bool = True
+    totalParticipants: int
+    publishedAt: Optional[str] = None
+    entries: List[LeaderboardEntryPublic] = []
+
+
+class LeaderboardSummaryItem(BaseModel):
+    quizId: str
+    quizTitle: str
+    quizSlug: str
+    isPublished: bool
+    status: Literal["coming_soon", "published"]
+    totalParticipants: int
+    announcementDate: Optional[str] = None
+
+
+class LeaderboardEntryAdmin(BaseModel):
+    rank: int
+    attemptId: str
+    participantName: str
+    participantEmail: str
+    participantInstitution: str
+    rollNumber: Optional[str] = ""
+    phone: Optional[str] = ""
+    department: Optional[str] = ""
+    yearOfStudy: Optional[str] = ""
+    score: int
+    maxScore: int
+    percentage: int
+    passed: bool
+    timeTakenSeconds: Optional[int] = None
+    timeFormatted: str
+    badgeName: str
+    submittedAt: str
+
+
+class LeaderboardAdminResponse(BaseModel):
+    quizId: str
+    quizTitle: str
+    quizSlug: str
+    isPublished: bool
+    status: Literal["draft", "published"]
+    publishedAt: Optional[str] = None
+    publishedBy: Optional[str] = None
+    announcementDate: Optional[str] = None
+    showPublicNames: bool = True
+    highlightTopThree: bool = True
+    customNote: Optional[str] = None
+    totalParticipants: int
+    entries: List[LeaderboardEntryAdmin] = []
+    stats: Dict[str, Any] = {}
+
+
+class LeaderboardSettingsUpdate(BaseModel):
+    announcementDate: Optional[str] = None
+    showPublicNames: Optional[bool] = None
+    highlightTopThree: Optional[bool] = None
+    customNote: Optional[str] = None
+
+
+class AttemptOverrideRequest(BaseModel):
+    score: Optional[int] = None
+    timeTakenSeconds: Optional[int] = None
+    participantName: Optional[str] = None
+    notes: Optional[str] = None
