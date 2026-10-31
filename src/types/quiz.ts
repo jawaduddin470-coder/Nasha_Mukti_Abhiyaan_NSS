@@ -53,11 +53,28 @@ export interface QuizSettings {
   allowAgeRange: boolean;
 }
 
+export interface QuizPortalItem {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  badge: string;
+  estimatedMinutes: number;
+  status: 'active' | 'upcoming' | 'disabled';
+  theme: 'awareness' | 'unity';
+  passingScorePercentage: number;
+  timeLimitMinutes: number;
+  questionCount: number;
+  totalPoints: number;
+}
+
 export interface Quiz {
   id: string;
   title: string;
   slug: string;
   description: string;
+  badge?: string;
+  theme?: 'awareness' | 'unity';
   estimatedMinutes: number;
   status: PublicationStatus;
   settings: QuizSettings;

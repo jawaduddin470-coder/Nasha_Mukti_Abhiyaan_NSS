@@ -4,7 +4,11 @@ NSS MJCET Nasha Mukti Abhiyaan
 """
 
 from typing import Optional, Literal
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
+try:
+    from pydantic import EmailStr
+except Exception:
+    EmailStr = str
 
 
 class AdminUserBase(BaseModel):

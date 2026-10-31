@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Trophy,
-  Clock,
   Search,
   Sparkles,
   ShieldCheck,
@@ -13,6 +12,7 @@ import {
   Calendar,
   Lock,
   Compass,
+  CheckCircle2,
 } from 'lucide-react';
 import { Container } from '../components/common/Container';
 import { AtmosphericBackground } from '../components/common/AtmosphericBackground';
@@ -20,7 +20,7 @@ import { leaderboardService } from '../services/leaderboardService';
 import { LeaderboardPublicResponse, LeaderboardEntryPublic } from '../types/leaderboard';
 import { LoadingState } from '../components/common/LoadingState';
 
-type QuizTab = 'nasha-mukti' | 'unity-day';
+type QuizTab = 'nasha-mukti' | 'unity-day' | 'unified';
 
 interface QuizTabOption {
   key: QuizTab;
@@ -29,7 +29,7 @@ interface QuizTabOption {
   shortTitle: string;
   subtitle: string;
   badge: string;
-  themeColor: string; // Tailwind accent border / text
+  themeColor: string;
   accentBg: string;
 }
 
@@ -51,8 +51,18 @@ const QUIZ_TABS: QuizTabOption[] = [
     shortTitle: 'National Unity Day',
     subtitle: 'Rashtriya Ekta Diwas • Celebrating Sardar Vallabhbhai Patel & National Harmony',
     badge: 'Rashtriya Ekta Diwas',
-    themeColor: 'from-[#EA580C] via-[#F59E0B] to-[#15803D]', // Indian tricolor accent
+    themeColor: 'from-[#EA580C] via-[#F59E0B] to-[#15803D]',
     accentBg: 'bg-[#EA580C]',
+  },
+  {
+    key: 'unified',
+    id: 'unified-nss-mjcet-leaderboard',
+    title: 'Unified NSS MJCET Leaderboard',
+    shortTitle: 'Unified Leaderboard',
+    subtitle: 'Comprehensive Combined Honors Across Both Awareness & National Unity Challenges',
+    badge: 'Combined Grand Standings',
+    themeColor: 'from-amber-500 via-[#159E9A] to-[#183153]',
+    accentBg: 'bg-amber-500',
   },
 ];
 
@@ -63,6 +73,7 @@ export const LeaderboardPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   const currentQuizMeta = QUIZ_TABS.find((t) => t.key === activeTab) || QUIZ_TABS[0];
+  const isUnifiedTab = activeTab === 'unified';
 
   useEffect(() => {
     let isMounted = true;
@@ -133,15 +144,15 @@ export const LeaderboardPage: React.FC = () => {
           </p>
 
           <p className="text-xs sm:text-sm text-[#4F678A] dark:text-slate-300 max-w-xl mx-auto leading-relaxed">
-            Honouring students and volunteers who demonstrated exceptional knowledge, conscious decision-making, and collegiate leadership across our awareness drives.
+            Honouring students and volunteers who demonstrated exceptional knowledge, conscious decision-making, and collegiate leadership across our awareness initiatives.
           </p>
         </div>
 
         {/* =========================================================================
-            2. DUAL QUIZ TABS (Nasha Mukti Awareness vs National Unity Day)
+            2. THREE LEADERBOARD TABS (Nasha Mukti, Unity Day, and Unified)
             ========================================================================= */}
         <div className="flex justify-center">
-          <div className="inline-flex p-1.5 rounded-2xl bg-white/90 dark:bg-[#12233C]/90 backdrop-blur-md border border-[#CFE3F0] dark:border-[#243A5E] shadow-sm max-w-2xl w-full sm:w-auto">
+          <div className="inline-flex p-1.5 rounded-2xl bg-white/90 dark:bg-[#12233C]/90 backdrop-blur-md border border-[#CFE3F0] dark:border-[#243A5E] shadow-sm max-w-3xl w-full sm:w-auto">
             {QUIZ_TABS.map((tab) => {
               const isSelected = activeTab === tab.key;
               return (
@@ -149,7 +160,7 @@ export const LeaderboardPage: React.FC = () => {
                   key={tab.key}
                   type="button"
                   onClick={() => setActiveTab(tab.key)}
-                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-4 sm:px-6 py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 cursor-pointer ${
+                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 sm:px-5 py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 cursor-pointer ${
                     isSelected
                       ? 'bg-gradient-to-r from-[#183153] to-[#203D67] text-white shadow-md shadow-[#183153]/20 dark:from-[#1E3B63] dark:to-[#152B49]'
                       : 'text-[#4F678A] dark:text-slate-300 hover:text-[#183153] dark:hover:text-white hover:bg-[#EAF6FC]/60 dark:hover:bg-[#1A3153]/60'
@@ -162,6 +173,8 @@ export const LeaderboardPage: React.FC = () => {
                       isSelected
                         ? tab.key === 'unity-day'
                           ? 'bg-[#EA580C]'
+                          : tab.key === 'unified'
+                          ? 'bg-amber-400'
                           : 'bg-[#159E9A]'
                         : 'bg-slate-300 dark:bg-slate-600'
                     }`}
@@ -186,7 +199,7 @@ export const LeaderboardPage: React.FC = () => {
                 {currentQuizMeta.badge}
               </span>
               <span className="text-xs text-slate-400 font-mono">
-                Official Examination Protocol
+                {isUnifiedTab ? 'Aggregated Grand Standings' : 'Official Examination Protocol'}
               </span>
             </div>
             <h2 className="text-lg sm:text-xl font-bold font-serif text-[#183153] dark:text-white truncate">
@@ -203,7 +216,7 @@ export const LeaderboardPage: React.FC = () => {
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#EAF5FB] dark:bg-[#172D4D] text-[#183153] dark:text-white hover:bg-[#DDF3F0] dark:hover:bg-[#1F3C66] border border-[#CFE3F0] dark:border-[#2B4773] transition-colors"
             >
               <Compass className="w-3.5 h-3.5 text-[#159E9A]" />
-              <span>Take Quiz</span>
+              <span>Explore Challenges</span>
             </Link>
           </div>
         </div>
@@ -217,9 +230,9 @@ export const LeaderboardPage: React.FC = () => {
           </div>
         ) : !data?.isPublished ? (
           /* =======================================================================
-             STAGE 1 (CURRENT STATE): RESULTS COMING SOON
-             COUNTDOWN-FREE, HIGH-ESTHETIC EDITORIAL ANNOUNCEMENT
-             NO FAKE PARTICIPANTS, DUMMY SCORES OR FABRICATED WINNERS
+             STAGE 1 (INITIAL RELEASE): RESULTS TO BE ANNOUNCED SOON
+             COUNTDOWN-FREE, HIGH-AESTHETIC EDITORIAL ANNOUNCEMENT
+             ZERO FAKE PARTICIPANTS, ZERO FABRICATED WINNERS
              ======================================================================= */
           <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn">
             {/* Monumental Announcement Card */}
@@ -250,96 +263,89 @@ export const LeaderboardPage: React.FC = () => {
                     <span>Sealed Administrative Evaluation</span>
                   </div>
 
-                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white font-serif">
-                    RESULTS COMING SOON
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold font-serif tracking-tight text-white">
+                    {data?.message || 'RESULTS TO BE ANNOUNCED SOON'}
                   </h2>
 
-                  <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-xl mx-auto font-normal">
-                    The quiz has concluded. Our team is preparing the official results. Stay tuned as we get ready to celebrate the participants and announce the champions.
+                  <p className="text-sm sm:text-base text-slate-300 leading-relaxed font-sans max-w-xl mx-auto">
+                    {data?.supportingText ||
+                      'Our participants have taken on the challenge. Official results and rankings will be revealed soon by NSS MJCET. Stay tuned!'}
                   </p>
                 </div>
 
-                {/* Institutional Verification Strip */}
-                <div className="pt-6 border-t border-white/10 grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
-                  <div className="p-3.5 rounded-xl bg-white/5 border border-white/10">
-                    <div className="flex items-center gap-2 text-amber-400 text-xs font-semibold mb-1">
-                      <FileCheck2 className="w-3.5 h-3.5" />
-                      <span>Verified Submissions</span>
-                    </div>
-                    <p className="text-lg font-bold font-mono text-white">
-                      {data?.totalParticipants ? `${data.totalParticipants} Recorded` : 'Active Submissions'}
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Authoritative MongoDB attempts</p>
+                {/* Announcement Date Notice if Scheduled */}
+                {data?.announcementDate && (
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 border border-white/15 text-xs text-amber-200">
+                    <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Scheduled Official Release: {data.announcementDate}</span>
                   </div>
+                )}
 
-                  <div className="p-3.5 rounded-xl bg-white/5 border border-white/10">
-                    <div className="flex items-center gap-2 text-[#5EEAD4] text-xs font-semibold mb-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>Official Ranking Rule</span>
-                    </div>
-                    <p className="text-sm font-bold text-white font-serif">Score &bull; Completion Time</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Strict accuracy &amp; duration metric</p>
+                {/* Institutional Reassurance Note */}
+                <div className="pt-4 border-t border-[#243D61] text-xs text-slate-400 flex flex-wrap items-center justify-center gap-4">
+                  <div className="flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-[#159E9A]" />
+                    <span>Authoritative Evaluation Protocol</span>
                   </div>
-
-                  <div className="p-3.5 rounded-xl bg-white/5 border border-white/10">
-                    <div className="flex items-center gap-2 text-sky-300 text-xs font-semibold mb-1">
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>Validation Status</span>
-                    </div>
-                    <p className="text-sm font-bold text-white">Super Admin Seal</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Authenticity verification underway</p>
+                  <div className="flex items-center gap-1.5">
+                    <FileCheck2 className="w-4 h-4 text-amber-400" />
+                    <span>Strict Score &amp; Time Verification</span>
                   </div>
-                </div>
-
-                {/* Campaign Statement Banner */}
-                <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span>Official announcement will be published directly on this board.</span>
-                  </div>
-                  <Link
-                    to="/activities"
-                    className="inline-flex items-center gap-1.5 font-semibold text-amber-300 hover:text-amber-200 transition-colors"
-                  >
-                    <span>View Campaign Activities</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
                 </div>
               </div>
+            </div>
+
+            {/* Campaign Participation CTA */}
+            <div className="rounded-2xl border border-[#CFE3F0] dark:border-[#243A5E] bg-white/80 dark:bg-[#12233C]/80 p-6 sm:p-7 flex flex-col sm:flex-row items-center justify-between gap-4 text-left shadow-sm">
+              <div className="space-y-1">
+                <h3 className="font-serif text-lg font-bold text-[#183153] dark:text-white">
+                  Have you completed both awareness challenges?
+                </h3>
+                <p className="text-xs sm:text-sm text-[#4F678A] dark:text-slate-300">
+                  Participate in the Nasha Mukti Challenge and the National Unity Day Challenge to earn combined honors on the Unified Board.
+                </p>
+              </div>
+              <Link
+                to="/quiz"
+                className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-[#183153] to-[#159E9A] text-white shadow-sm hover:opacity-95 transition-all"
+              >
+                <span>Enter Challenge Portal</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
           </div>
         ) : (
           /* =======================================================================
-             STAGE 2: PUBLISHED RESULTS
-             PREMIUM PODIUM FOR TOP 3 & FULL RECORDED RANKINGS
+             STAGE 2: OFFICIAL RESULTS PUBLISHED
+             Dynamic Podium & Standings Table for Single or Unified Board
              ======================================================================= */
           <div className="space-y-12 animate-fadeIn">
-            {/* Top 3 Podium Composition */}
-            {data.highlightTopThree && topThree.length > 0 && (
+            {/* Top Three Podium Composition */}
+            {data?.highlightTopThree && topThree.length > 0 && (
               <div className="max-w-4xl mx-auto space-y-6">
                 <div className="text-center space-y-1">
-                  <span className="text-xs font-bold tracking-widest uppercase text-amber-600 dark:text-amber-400">
-                    Highest Distinction
-                  </span>
-                  <h2 className="text-2xl sm:text-3xl font-bold font-serif text-[#183153] dark:text-white">
-                    The Top Honors
-                  </h2>
+                  <h3 className="font-serif text-2xl font-bold text-[#183153] dark:text-white">
+                    Official Champions Podium
+                  </h3>
+                  <p className="text-xs text-[#4F678A] dark:text-slate-400">
+                    Highest authentic scores verified with shortest completion duration.
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end pt-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-end pt-8">
                   {/* Rank 2 (Silver) */}
                   {topThree[1] && (
                     <div className="order-2 md:order-1 flex flex-col items-center">
-                      <div className="w-full rounded-2xl bg-gradient-to-b from-white via-slate-50 to-[#EAF5FB] dark:from-[#13253E] dark:to-[#0C1726] border-2 border-slate-300 dark:border-slate-500/50 p-6 text-center shadow-lg relative space-y-3">
+                      <div className="w-full rounded-2xl bg-gradient-to-b from-white via-slate-50 to-[#EAF5FB] dark:from-[#13253E] dark:to-[#0C1726] border-2 border-slate-300 dark:border-slate-600 p-6 text-center shadow-lg relative space-y-3">
                         <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 border-2 border-slate-400 mx-auto -mt-12 flex items-center justify-center shadow-md">
-                          <Medal className="w-6 h-6 text-slate-500 dark:text-slate-200" />
+                          <Medal className="w-6 h-6 text-slate-600 dark:text-slate-200" />
                         </div>
-                        <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">
+                        <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                           2nd Place &bull; Silver
                         </span>
-                        <h3 className="text-lg font-bold font-serif text-[#183153] dark:text-white truncate">
+                        <h4 className="text-lg font-bold font-serif text-[#183153] dark:text-white truncate">
                           {topThree[1].participantName}
-                        </h3>
+                        </h4>
                         <p className="text-xs text-[#4F678A] dark:text-slate-400 truncate">
                           {topThree[1].participantInstitution}
                         </p>
@@ -358,24 +364,24 @@ export const LeaderboardPage: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      <div className="hidden md:block w-full h-16 bg-gradient-to-t from-slate-200 dark:from-slate-800 to-transparent rounded-b-xl -mt-2" />
+                      <div className="hidden md:block w-full h-16 bg-gradient-to-t from-slate-200 dark:from-slate-800/40 to-transparent rounded-b-xl -mt-2" />
                     </div>
                   )}
 
                   {/* Rank 1 (Gold) */}
                   {topThree[0] && (
-                    <div className="order-1 md:order-2 flex flex-col items-center">
-                      <div className="w-full rounded-2xl bg-gradient-to-b from-white via-amber-50/40 to-[#FEF3C7]/40 dark:from-[#172D4D] dark:to-[#12233C] border-2 border-amber-400 dark:border-amber-400/80 p-7 text-center shadow-xl shadow-amber-500/15 relative space-y-3.5 transform md:-translate-y-4">
-                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 border-2 border-amber-200 mx-auto -mt-14 flex items-center justify-center shadow-lg shadow-amber-500/30">
-                          <Crown className="w-7 h-7 text-amber-950" />
+                    <div className="order-1 md:order-2 flex flex-col items-center z-10">
+                      <div className="w-full rounded-2xl bg-gradient-to-b from-amber-50/90 via-white to-amber-100/60 dark:from-[#1D324F] dark:to-[#122238] border-2 border-amber-400 dark:border-amber-400/80 p-7 text-center shadow-2xl shadow-amber-500/10 relative space-y-3">
+                        <div className="w-14 h-14 rounded-full bg-gradient-to-b from-amber-300 to-amber-500 border-2 border-white dark:border-amber-200 mx-auto -mt-14 flex items-center justify-center shadow-lg">
+                          <Crown className="w-7 h-7 text-white drop-shadow-sm" />
                         </div>
-                        <span className="inline-block px-3 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-amber-400 text-amber-950 shadow-xs">
+                        <span className="inline-block px-3 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-amber-400/20 text-amber-800 dark:text-amber-300 border border-amber-400/40">
                           1st Place &bull; Gold Champion
                         </span>
-                        <h3 className="text-xl font-bold font-serif text-[#183153] dark:text-white truncate">
+                        <h4 className="text-xl font-bold font-serif text-[#183153] dark:text-white truncate">
                           {topThree[0].participantName}
-                        </h3>
-                        <p className="text-xs text-[#4F678A] dark:text-slate-300 truncate">
+                        </h4>
+                        <p className="text-xs text-[#4F678A] dark:text-slate-400 truncate">
                           {topThree[0].participantInstitution}
                         </p>
                         <div className="pt-2 border-t border-amber-200 dark:border-amber-400/30 flex items-center justify-around text-xs">
@@ -407,9 +413,9 @@ export const LeaderboardPage: React.FC = () => {
                         <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-700/15 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">
                           3rd Place &bull; Bronze
                         </span>
-                        <h3 className="text-lg font-bold font-serif text-[#183153] dark:text-white truncate">
+                        <h4 className="text-lg font-bold font-serif text-[#183153] dark:text-white truncate">
                           {topThree[2].participantName}
-                        </h3>
+                        </h4>
                         <p className="text-xs text-[#4F678A] dark:text-slate-400 truncate">
                           {topThree[2].participantInstitution}
                         </p>
@@ -440,10 +446,12 @@ export const LeaderboardPage: React.FC = () => {
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
                   <h3 className="text-xl font-bold font-serif text-[#183153] dark:text-white">
-                    Official Participant Standings
+                    {isUnifiedTab ? 'Unified Participant Grand Standings' : 'Official Participant Standings'}
                   </h3>
                   <p className="text-xs text-[#4F678A] dark:text-slate-400">
-                    Showing certified results ranked strictly by score, completion duration, and submission time.
+                    {isUnifiedTab
+                      ? 'Combined aggregate scores achieved across both challenges.'
+                      : 'Certified individual results ranked strictly by score and duration.'}
                   </p>
                 </div>
 
@@ -473,13 +481,16 @@ export const LeaderboardPage: React.FC = () => {
                           <th className="py-3.5 px-4 w-16 text-center">Rank</th>
                           <th className="py-3.5 px-4">Participant</th>
                           <th className="py-3.5 px-4 hidden md:table-cell">Institution</th>
+                          {isUnifiedTab && (
+                            <th className="py-3.5 px-4 text-center hidden sm:table-cell">Completed Quizzes</th>
+                          )}
                           <th className="py-3.5 px-4 text-center">Score</th>
                           <th className="py-3.5 px-4 text-center hidden sm:table-cell">Duration</th>
                           <th className="py-3.5 px-4 text-center">Distinction Badge</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#EAF5FB] dark:divide-[#193256]">
-                        {filteredEntries.map((entry) => {
+                      <tbody className="divide-y divide-[#CFE3F0]/60 dark:divide-[#243A5E]/60">
+                        {filteredEntries.map((entry: LeaderboardEntryPublic) => {
                           const isGold = entry.rank === 1;
                           const isSilver = entry.rank === 2;
                           const isBronze = entry.rank === 3;
@@ -487,53 +498,77 @@ export const LeaderboardPage: React.FC = () => {
                           return (
                             <tr
                               key={entry.attemptId}
-                              className={`hover:bg-[#EAF6FC]/50 dark:hover:bg-[#152B49]/50 transition-colors ${
+                              className={`transition-colors ${
                                 isGold
                                   ? 'bg-amber-50/40 dark:bg-amber-950/20'
                                   : isSilver
-                                  ? 'bg-slate-50/40 dark:bg-slate-900/20'
+                                  ? 'bg-slate-50/50 dark:bg-slate-800/20'
                                   : isBronze
-                                  ? 'bg-orange-50/30 dark:bg-orange-950/15'
-                                  : ''
+                                  ? 'bg-orange-50/30 dark:bg-orange-950/10'
+                                  : 'hover:bg-[#EAF6FC]/40 dark:hover:bg-[#152B49]/40'
                               }`}
                             >
-                              <td className="py-3.5 px-4 text-center font-bold">
+                              <td className="py-3.5 px-4 text-center font-mono">
                                 {isGold ? (
-                                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-400 text-amber-950 text-xs shadow-xs">
+                                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-400 text-amber-950 font-bold text-xs shadow-xs">
                                     1
                                   </span>
                                 ) : isSilver ? (
-                                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-300 dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs">
+                                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-300 text-slate-800 font-bold text-xs shadow-xs">
                                     2
                                   </span>
                                 ) : isBronze ? (
-                                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-700/30 text-amber-900 dark:text-amber-300 text-xs">
+                                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-700/60 text-white font-bold text-xs shadow-xs">
                                     3
                                   </span>
                                 ) : (
-                                  <span className="text-slate-400 font-mono">#{entry.rank}</span>
+                                  <span className="font-semibold text-slate-500">#{entry.rank}</span>
                                 )}
                               </td>
-                              <td className="py-3.5 px-4">
-                                <div className="font-semibold text-[#183153] dark:text-white">
-                                  {entry.participantName}
-                                </div>
-                                <div className="text-[11px] text-slate-400 md:hidden truncate max-w-[180px]">
+
+                              <td className="py-3.5 px-4 font-medium text-[#183153] dark:text-white">
+                                <div className="truncate max-w-[180px] sm:max-w-xs">{entry.participantName}</div>
+                                <div className="text-[11px] text-slate-400 md:hidden truncate">
                                   {entry.participantInstitution}
                                 </div>
                               </td>
-                              <td className="py-3.5 px-4 hidden md:table-cell text-slate-600 dark:text-slate-300">
-                                {entry.participantInstitution}
+
+                              <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 hidden md:table-cell">
+                                <div className="truncate max-w-xs">{entry.participantInstitution}</div>
                               </td>
-                              <td className="py-3.5 px-4 text-center font-mono font-bold text-[#183153] dark:text-white">
-                                <span>{entry.score}</span>
-                                <span className="text-slate-400 text-[10px] font-normal">/{entry.maxScore}</span>
+
+                              {isUnifiedTab && (
+                                <td className="py-3.5 px-4 text-center hidden sm:table-cell">
+                                  {entry.completedQuizzes && entry.completedQuizzes.length === 2 ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                      Both Quizzes
+                                    </span>
+                                  ) : entry.completedQuizzes && entry.completedQuizzes[0]?.includes('unity') ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                                      Unity Day Only
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300">
+                                      Awareness Only
+                                    </span>
+                                  )}
+                                </td>
+                              )}
+
+                              <td className="py-3.5 px-4 text-center">
+                                <span className="font-mono font-bold text-[#183153] dark:text-white">
+                                  {entry.score}
+                                </span>
+                                <span className="text-[10px] text-slate-400">/{entry.maxScore}</span>
                               </td>
-                              <td className="py-3.5 px-4 text-center font-mono text-slate-500 dark:text-slate-400 hidden sm:table-cell">
+
+                              <td className="py-3.5 px-4 text-center font-mono text-slate-500 hidden sm:table-cell">
                                 {entry.timeFormatted}
                               </td>
+
                               <td className="py-3.5 px-4 text-center">
-                                <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#EAF5FB] dark:bg-[#172D4D] text-[#159E9A] dark:text-[#5EEAD4] border border-[#CFE3F0] dark:border-[#2B4773]">
+                                <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#EAF5FB] dark:bg-[#162D4A] text-[#159E9A] dark:text-[#5EEAD4] border border-[#CFE3F0] dark:border-[#243A5E]">
                                   {entry.badgeName}
                                 </span>
                               </td>
@@ -548,16 +583,6 @@ export const LeaderboardPage: React.FC = () => {
             </div>
           </div>
         )}
-
-        {/* Institutional Guarantee Note */}
-        <div className="pt-6 border-t border-[#CFE3F0] dark:border-[#243A5E] text-center max-w-2xl mx-auto space-y-1 text-xs text-[#64748B] dark:text-slate-400">
-          <p className="font-semibold text-[#183153] dark:text-slate-300">
-            NSS MJCET Examination &amp; Recognition Committee
-          </p>
-          <p>
-            Muffakham Jah College of Engineering &amp; Technology &bull; Osmania University &bull; Government of India
-          </p>
-        </div>
       </Container>
     </div>
   );

@@ -20,11 +20,13 @@ import { useTheme } from '../../context/ThemeContext';
 interface QuizWelcomeProps {
   quiz: Quiz;
   onStart: () => void;
+  onBackToPortal?: () => void;
 }
 
 export const QuizWelcome: React.FC<QuizWelcomeProps> = ({
   quiz,
   onStart,
+  onBackToPortal,
 }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -48,6 +50,18 @@ export const QuizWelcome: React.FC<QuizWelcomeProps> = ({
           className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-[#159E9A]/10 pointer-events-none blur-3xl"
           aria-hidden="true"
         />
+
+        {onBackToPortal && (
+          <div className="relative z-10 mb-4">
+            <button
+              type="button"
+              onClick={onBackToPortal}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#159E9A] hover:text-[#128885] dark:text-[#5EEAD4] bg-[#EAF5FB]/80 dark:bg-[#152744] hover:bg-[#DDF3F0] transition-colors"
+            >
+              <span>&larr; Back to Quiz Portal</span>
+            </button>
+          </div>
+        )}
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-start justify-between gap-6">
           <div className="space-y-3 max-w-2xl text-left">

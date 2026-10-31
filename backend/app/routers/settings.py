@@ -7,7 +7,11 @@ Manages verified institutional branding, contact details, and campaign configura
 from typing import Dict, Any, Optional
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
+try:
+    from pydantic import EmailStr
+except Exception:
+    EmailStr = str
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from backend.app.core.permissions import require_super_admin
 from backend.app.db.mongodb import get_database

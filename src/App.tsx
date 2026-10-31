@@ -53,6 +53,7 @@ export const App: React.FC = () => {
                 <Route path="events" element={<ActivitiesPage />} />
                 <Route path="gallery" element={<GalleryPage />} />
                 <Route path="quiz" element={<QuizPage />} />
+                <Route path="quiz/:quizId" element={<QuizPage />} />
                 <Route path="leaderboard" element={<LeaderboardPage />} />
                 <Route path="quiz/leaderboard" element={<LeaderboardPage />} />
                 <Route path="support" element={<SupportPage />} />

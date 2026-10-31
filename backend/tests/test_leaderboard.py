@@ -63,8 +63,8 @@ async def test_public_leaderboard_unpublished_state(client):
 
     assert data["isPublished"] is False
     assert data["status"] == "coming_soon"
-    assert "RESULTS COMING SOON" in data["message"]
-    assert "preparing the official results" in data["supportingText"]
+    assert "RESULTS" in data["message"]
+    assert "Official results and rankings will be revealed soon" in data["supportingText"]
     # CRITICAL: Entries must be strictly empty when unpublished
     assert data["entries"] == []
     assert data["totalParticipants"] >= 0
@@ -194,4 +194,71 @@ async def test_masked_names_setting(client):
         json={"showPublicNames": True},
         headers=sa_headers,
     )
+
+
+@pytest.mark.asyncio
+async def test_quiz_portal_and_question_isolation(client):
+    """Verifies that the portal endpoint returns both quizzes and questions never mix."""
+    # 1. Test portal list
+    res = await client.get("/api/v1/quiz/portal")
+    assert res.status_code == 200
+    portal_data = res.json()
+    assert len(portal_data) >= 2
+    quiz_ids = [q["id"] for q in portal_data]
+    assert "nmba-awareness-challenge-v1" in quiz_ids
+    assert "national-unity-day-quiz-v1" in quiz_ids
+
+    # 2. Test Nasha Mukti questions isolation
+    nmba_res = await client.get("/api/v1/quiz/public/nmba-awareness-challenge-v1")
+    assert nmba_res.status_code == 200
+    nmba_qs = nmba_res.json()
+    assert len(nmba_qs) == 30
+    for q in nmba_qs:
+        assert q["quizId"] == "nmba-awareness-challenge-v1"
+        assert "correctAnswerIds" not in q
+        assert "explanation" not in q
+
+    # 3. Test National Unity Day questions isolation
+    unity_res = await client.get("/api/v1/quiz/public/national-unity-day-quiz-v1")
+    assert unity_res.status_code == 200
+    unity_qs = unity_res.json()
+    assert len(unity_qs) == 10
+    for q in unity_qs:
+        assert q["quizId"] == "national-unity-day-quiz-v1"
+        assert "correctAnswerIds" not in q
+        assert "explanation" not in q
+
+
+@pytest.mark.asyncio
+async def test_unified_leaderboard_lifecycle(client):
+    """Verifies the unified leaderboard endpoint, 3 leaderboard overview, and admin preview."""
+    sa_headers = {"Authorization": f"Bearer {SUPER_ADMIN_TOKEN}"}
+
+    # 1. Summary of all 3 leaderboards
+    overview_res = await client.get("/api/v1/quiz/leaderboards")
+    assert overview_res.status_code == 200
+    items = overview_res.json()
+    assert len(items) == 3
+    ids = [i["quizId"] for i in items]
+    assert "nmba-awareness-challenge-v1" in ids
+    assert "national-unity-day-quiz-v1" in ids
+    assert "unified-nss-mjcet-leaderboard" in ids
+
+    # 2. Public unpublished state of unified board
+    pub_res = await client.get("/api/v1/quiz/leaderboard/unified-nss-mjcet-leaderboard")
+    assert pub_res.status_code == 200
+    pub_data = pub_res.json()
+    assert pub_data["isPublished"] is False
+    assert pub_data["status"] == "coming_soon"
+    assert "RESULTS" in pub_data["message"]
+    assert pub_data["entries"] == []
+
+    # 3. Admin preview of unified board
+    admin_res = await client.get("/api/v1/admin/quiz/leaderboard/unified-nss-mjcet-leaderboard", headers=sa_headers)
+    assert admin_res.status_code == 200
+    admin_data = admin_res.json()
+    assert admin_data["quizId"] == "unified-nss-mjcet-leaderboard"
+    assert "entries" in admin_data
+    assert "stats" in admin_data
+
 

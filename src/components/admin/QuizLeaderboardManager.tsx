@@ -38,6 +38,12 @@ const QUIZZES = [
     slug: 'national-unity-day',
     badge: 'Rashtriya Ekta Diwas',
   },
+  {
+    id: 'unified-nss-mjcet-leaderboard',
+    title: 'Unified NSS MJCET Leaderboard',
+    slug: 'unified',
+    badge: 'Combined Grand Standings',
+  },
 ];
 
 export const QuizLeaderboardManager: React.FC<QuizLeaderboardManagerProps> = ({
@@ -55,6 +61,7 @@ export const QuizLeaderboardManager: React.FC<QuizLeaderboardManagerProps> = ({
   const [showPublicNames, setShowPublicNames] = useState<boolean>(true);
   const [highlightTopThree, setHighlightTopThree] = useState<boolean>(true);
   const [customNote, setCustomNote] = useState<string>('');
+  const [eligibilityRule, setEligibilityRule] = useState<'any' | 'both'>('any');
 
   // Override Modal state
   const [editingEntry, setEditingEntry] = useState<LeaderboardEntryAdmin | null>(null);
@@ -72,6 +79,7 @@ export const QuizLeaderboardManager: React.FC<QuizLeaderboardManagerProps> = ({
       setShowPublicNames(res.showPublicNames ?? true);
       setHighlightTopThree(res.highlightTopThree ?? true);
       setCustomNote(res.customNote || '');
+      setEligibilityRule(res.eligibilityRule || 'any');
     } catch (err: any) {
       console.error(err);
       setMessage({ type: 'error', text: err?.message || 'Failed to load leaderboard data.' });
@@ -125,6 +133,7 @@ export const QuizLeaderboardManager: React.FC<QuizLeaderboardManagerProps> = ({
         showPublicNames,
         highlightTopThree,
         customNote,
+        eligibilityRule: selectedQuizId === 'unified-nss-mjcet-leaderboard' ? eligibilityRule : undefined,
       };
       await leaderboardService.updateSettings(selectedQuizId, payload);
       setMessage({ type: 'success', text: 'Presentation settings updated successfully.' });
@@ -331,7 +340,7 @@ export const QuizLeaderboardManager: React.FC<QuizLeaderboardManagerProps> = ({
               <h2 className="text-sm font-bold tracking-tight">Presentation &amp; Privacy Configuration</h2>
             </div>
 
-            <form onSubmit={handleSaveSettings} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <form onSubmit={handleSaveSettings} className={`grid grid-cols-1 md:grid-cols-2 ${selectedQuizId === 'unified-nss-mjcet-leaderboard' ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-4`}>
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-[#183153] dark:text-slate-200">
                   Official Announcement Date (Optional)
@@ -359,6 +368,23 @@ export const QuizLeaderboardManager: React.FC<QuizLeaderboardManagerProps> = ({
                   className="w-full px-3 py-2 text-xs rounded-xl bg-[#F0F7FB] dark:bg-[#112239] border border-[#CFE3F0] dark:border-[#243A5E] focus:outline-none focus:ring-2 focus:ring-[#159E9A]"
                 />
               </div>
+
+              {selectedQuizId === 'unified-nss-mjcet-leaderboard' && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-[#183153] dark:text-slate-200">
+                    Leaderboard Eligibility Rule
+                  </label>
+                  <select
+                    value={eligibilityRule}
+                    onChange={(e) => setEligibilityRule(e.target.value as 'any' | 'both')}
+                    disabled={!isSuperAdmin}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-[#F0F7FB] dark:bg-[#112239] border border-[#CFE3F0] dark:border-[#243A5E] focus:outline-none focus:ring-2 focus:ring-[#159E9A]"
+                  >
+                    <option value="any">Any Quiz Attempted (Inclusive)</option>
+                    <option value="both">Both Quizzes Required (Dual Completion)</option>
+                  </select>
+                </div>
+              )}
 
               <div className="flex flex-col justify-end space-y-2">
                 <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold">
@@ -436,7 +462,12 @@ export const QuizLeaderboardManager: React.FC<QuizLeaderboardManagerProps> = ({
                       <th className="py-3 px-3">Participant</th>
                       <th className="py-3 px-3">Email &amp; Roll Number</th>
                       <th className="py-3 px-3">Institution</th>
-                      <th className="py-3 px-3 text-center">Score</th>
+                      {selectedQuizId === 'unified-nss-mjcet-leaderboard' && (
+                        <th className="py-3 px-3 text-center">Score Breakdown</th>
+                      )}
+                      <th className="py-3 px-3 text-center">
+                        {selectedQuizId === 'unified-nss-mjcet-leaderboard' ? 'Combined Score' : 'Score'}
+                      </th>
                       <th className="py-3 px-3 text-center">Time Taken</th>
                       <th className="py-3 px-3 text-center">Distinction</th>
                       {isSuperAdmin && <th className="py-3 px-3 text-right">Actions</th>}
@@ -488,6 +519,18 @@ export const QuizLeaderboardManager: React.FC<QuizLeaderboardManagerProps> = ({
                           <td className="py-3 px-3 text-slate-600 dark:text-slate-300 truncate max-w-[180px]">
                             {entry.participantInstitution}
                           </td>
+                          {selectedQuizId === 'unified-nss-mjcet-leaderboard' && (
+                            <td className="py-3 px-3 text-center text-[10px] space-y-1">
+                              <div className="flex items-center justify-center gap-1.5 font-mono">
+                                <span className="text-cyan-700 dark:text-cyan-400 font-semibold">NM: {entry.nashaMuktiScore ?? '-'}</span>
+                                <span className="text-slate-300">|</span>
+                                <span className="text-amber-700 dark:text-amber-400 font-semibold">Unity: {entry.unityDayScore ?? '-'}</span>
+                              </div>
+                              <span className="inline-block px-1.5 py-0.5 rounded text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium">
+                                {entry.quizzesAttemptedCount ?? entry.completedQuizzes?.length ?? 1}/2 Quizzes
+                              </span>
+                            </td>
+                          )}
                           <td className="py-3 px-3 text-center font-mono font-bold text-[#183153] dark:text-white">
                             <span>{entry.score}</span>
                             <span className="text-[10px] text-slate-400">/{entry.maxScore}</span>

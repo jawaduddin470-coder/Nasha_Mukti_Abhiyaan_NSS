@@ -1,12 +1,13 @@
 import {
   Quiz,
+  QuizPortalItem,
   ParticipantRegistration,
   QuizRegistrationErrors,
   QuizResult,
   QuestionResultDetail,
   AdminQuizStats,
 } from '../types/quiz';
-import { SAMPLE_AWARENESS_QUIZ } from '../data/quizData';
+import { SAMPLE_AWARENESS_QUIZ, SAMPLE_UNITY_QUIZ } from '../data/quizData';
 import { apiClient } from './apiClient';
 
 export interface PostQuizAwarenessMessage {
@@ -19,6 +20,42 @@ export interface PostQuizAwarenessMessage {
 }
 
 /**
+ * Fallback portal items in case backend is loading or unavailable
+ */
+export const FALLBACK_PORTAL_QUIZZES: QuizPortalItem[] = [
+  {
+    id: 'nmba-awareness-challenge-v1',
+    title: 'Nasha Mukti Awareness Challenge',
+    slug: 'nasha-mukti-awareness',
+    description:
+      'Explore substance abuse awareness, prevention, mental wellbeing, healthy choices and the importance of supporting one another.',
+    badge: 'Campus Resilience & Health',
+    estimatedMinutes: 10,
+    status: 'active',
+    theme: 'awareness',
+    passingScorePercentage: 70,
+    timeLimitMinutes: 15,
+    questionCount: 30,
+    totalPoints: 300,
+  },
+  {
+    id: 'national-unity-day-quiz-v1',
+    title: 'National Unity Day Challenge',
+    slug: 'national-unity-day',
+    description:
+      "Celebrate India's unity, diversity and national identity through an interactive challenge exploring Indian history, patriotism, national integration and civic values.",
+    badge: 'Rashtriya Ekta Diwas',
+    estimatedMinutes: 8,
+    status: 'active',
+    theme: 'unity',
+    passingScorePercentage: 70,
+    timeLimitMinutes: 10,
+    questionCount: 10,
+    totalPoints: 100,
+  },
+];
+
+/**
  * Quiz Service Layer
  * NSS MJCET Nasha Mukti Abhiyaan
  *
@@ -26,21 +63,87 @@ export interface PostQuizAwarenessMessage {
  */
 class QuizService {
   /**
-   * Fetch the active published campaign awareness quiz
+   * Fetch all configured campaign quizzes for the Unified Portal
    */
-  async getPublicQuiz(): Promise<Quiz> {
+  async getPortalQuizzes(): Promise<QuizPortalItem[]> {
     try {
-      const questions = await apiClient.get<any[]>('/quiz/public');
+      const data = await apiClient.get<QuizPortalItem[]>('/quiz/portal');
+      if (Array.isArray(data) && data.length > 0) {
+        return data;
+      }
+    } catch (e) {
+      console.warn('Backend /quiz/portal fetch failed, using fallback:', e);
+    }
+    return FALLBACK_PORTAL_QUIZZES;
+  }
+
+  /**
+   * Fetch the active published campaign awareness or unity quiz by identifier
+   */
+  async getPublicQuiz(quizId?: string): Promise<Quiz> {
+    const isUnity = quizId && (
+      quizId.toLowerCase().includes('unity') ||
+      quizId === 'national-unity-day-quiz-v1'
+    );
+    const targetId = isUnity ? 'national-unity-day-quiz-v1' : 'nmba-awareness-challenge-v1';
+    const baseFallback = isUnity ? SAMPLE_UNITY_QUIZ : SAMPLE_AWARENESS_QUIZ;
+
+    try {
+      const questions = await apiClient.get<any[]>(`/quiz/public/${targetId}`);
       if (Array.isArray(questions) && questions.length > 0) {
         return {
-          ...SAMPLE_AWARENESS_QUIZ,
+          ...baseFallback,
+          id: targetId,
           questions: questions as any,
         };
       }
     } catch (e) {
-      console.warn('Backend quiz questions fetch failed, using local fallback:', e);
+      console.warn(`Backend quiz questions fetch failed for ${targetId}, using local fallback:`, e);
     }
-    return SAMPLE_AWARENESS_QUIZ;
+    return baseFallback;
+  }
+
+  /**
+   * Fetch list of all quizzes for admin CMS management
+   */
+  async getAdminQuizzes(): Promise<QuizPortalItem[]> {
+    return apiClient.get<QuizPortalItem[]>('/admin/quizzes');
+  }
+
+  /**
+   * Update quiz configuration settings (title, description, duration, status, etc.)
+   */
+  async updateAdminQuiz(quizId: string, payload: Partial<QuizPortalItem>): Promise<QuizPortalItem> {
+    return apiClient.put<QuizPortalItem>(`/admin/quizzes/${quizId}`, payload);
+  }
+
+  /**
+   * Fetch admin question bank optionally filtered by quizId
+   */
+  async getAdminQuestions(quizId?: string): Promise<any[]> {
+    const url = quizId && quizId !== 'all' ? `/admin/quiz/questions?quiz_id=${quizId}` : '/admin/quiz/questions';
+    return apiClient.get<any[]>(url);
+  }
+
+  /**
+   * Create new question in admin curriculum bank
+   */
+  async createAdminQuestion(payload: any): Promise<any> {
+    return apiClient.post<any>('/admin/quiz/questions', payload);
+  }
+
+  /**
+   * Update question in admin curriculum bank
+   */
+  async updateAdminQuestion(questionId: string, payload: any): Promise<any> {
+    return apiClient.put<any>(`/admin/quiz/questions/${questionId}`, payload);
+  }
+
+  /**
+   * Delete question from admin curriculum bank
+   */
+  async deleteAdminQuestion(questionId: string): Promise<any> {
+    return apiClient.delete<any>(`/admin/quiz/questions/${questionId}`);
   }
 
   /**

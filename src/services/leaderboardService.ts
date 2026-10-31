@@ -45,11 +45,19 @@ class LeaderboardService {
         status: 'coming_soon',
         totalParticipants: 0,
       },
+      {
+        quizId: 'unified-nss-mjcet-leaderboard',
+        quizTitle: 'Unified NSS MJCET Leaderboard',
+        quizSlug: 'unified',
+        isPublished: false,
+        status: 'coming_soon',
+        totalParticipants: 0,
+      },
     ];
   }
 
   /**
-   * Retrieves public leaderboard for a specific quiz.
+   * Retrieves public leaderboard for a specific quiz or the unified leaderboard.
    * If unpublished, backend returns empty entries list and announcement text.
    */
   async getPublicLeaderboard(quizId: string): Promise<LeaderboardPublicResponse> {
@@ -63,18 +71,27 @@ class LeaderboardService {
     }
 
     // Fallback safe coming soon state
+    const isUnified = quizId.toLowerCase().includes('unified');
     const isUnity = quizId.toLowerCase().includes('unity');
+    const title = isUnified
+      ? 'Unified NSS MJCET Leaderboard'
+      : isUnity
+      ? 'National Unity Day Quiz'
+      : 'Nasha Mukti Awareness Quiz';
+    const slug = isUnified ? 'unified' : isUnity ? 'national-unity-day' : 'nasha-mukti-awareness';
+
     return {
       quizId,
-      quizTitle: isUnity ? 'National Unity Day Quiz' : 'Nasha Mukti Awareness Quiz',
-      quizSlug: isUnity ? 'national-unity-day' : 'nasha-mukti-awareness',
+      quizTitle: title,
+      quizSlug: slug,
       isPublished: false,
       status: 'coming_soon',
-      message: 'RESULTS COMING SOON',
+      message: 'RESULTS TO BE ANNOUNCED SOON',
       supportingText:
-        'The quiz has concluded. Our team is preparing the official results. Stay tuned as we get ready to celebrate the participants and announce the champions.',
+        'Our participants have taken on the challenge. Official results and rankings will be revealed soon by NSS MJCET. Stay tuned!',
       showPublicNames: true,
       highlightTopThree: true,
+      eligibilityRule: 'any',
       totalParticipants: 0,
       entries: [],
     };

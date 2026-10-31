@@ -4,7 +4,11 @@ NSS MJCET Nasha Mukti Abhiyaan
 """
 
 from typing import List, Dict, Optional, Literal, Any
-from pydantic import BaseModel, Field, EmailStr, model_validator
+from pydantic import BaseModel, Field, model_validator
+try:
+    from pydantic import EmailStr
+except Exception:
+    EmailStr = str
 
 
 class QuizOption(BaseModel):
@@ -12,7 +16,33 @@ class QuizOption(BaseModel):
     text: str
 
 
+class QuizConfigItem(BaseModel):
+    id: str
+    title: str
+    slug: str
+    description: str
+    badge: str
+    estimatedMinutes: int
+    status: Literal["active", "upcoming", "disabled"]
+    theme: Literal["awareness", "unity"]
+    passingScorePercentage: int = 70
+    timeLimitMinutes: int = 15
+    questionCount: int = 0
+    totalPoints: int = 0
+
+
+class QuizConfigUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    badge: Optional[str] = None
+    estimatedMinutes: Optional[int] = None
+    status: Optional[Literal["active", "upcoming", "disabled"]] = None
+    passingScorePercentage: Optional[int] = None
+    timeLimitMinutes: Optional[int] = None
+
+
 class QuizQuestionBase(BaseModel):
+    quizId: str = "nmba-awareness-challenge-v1"
     text: str
     category: str
     type: Literal["single", "multiple", "boolean"]
@@ -52,6 +82,7 @@ class QuizQuestionCreate(QuizQuestionBase):
 
 
 class QuizQuestionUpdate(BaseModel):
+    quizId: Optional[str] = None
     text: Optional[str] = None
     category: Optional[str] = None
     type: Optional[Literal["single", "multiple", "boolean"]] = None
@@ -164,6 +195,10 @@ class LeaderboardEntryPublic(BaseModel):
     timeFormatted: str
     badgeName: str
     submittedAt: str
+    completedQuizzes: Optional[List[str]] = None
+    nashaMuktiScore: Optional[int] = None
+    unityDayScore: Optional[int] = None
+    quizzesAttemptedCount: Optional[int] = None
 
 
 class LeaderboardPublicResponse(BaseModel):
@@ -178,6 +213,7 @@ class LeaderboardPublicResponse(BaseModel):
     customNote: Optional[str] = None
     showPublicNames: bool = True
     highlightTopThree: bool = True
+    eligibilityRule: Optional[str] = "any"
     totalParticipants: int
     publishedAt: Optional[str] = None
     entries: List[LeaderboardEntryPublic] = []
@@ -211,6 +247,12 @@ class LeaderboardEntryAdmin(BaseModel):
     timeFormatted: str
     badgeName: str
     submittedAt: str
+    completedQuizzes: Optional[List[str]] = None
+    nashaMuktiScore: Optional[int] = None
+    unityDayScore: Optional[int] = None
+    quizzesAttemptedCount: Optional[int] = None
+    nashaMuktiAttemptId: Optional[str] = None
+    unityDayAttemptId: Optional[str] = None
 
 
 class LeaderboardAdminResponse(BaseModel):
@@ -224,6 +266,7 @@ class LeaderboardAdminResponse(BaseModel):
     announcementDate: Optional[str] = None
     showPublicNames: bool = True
     highlightTopThree: bool = True
+    eligibilityRule: Optional[str] = "any"
     customNote: Optional[str] = None
     totalParticipants: int
     entries: List[LeaderboardEntryAdmin] = []
@@ -235,6 +278,7 @@ class LeaderboardSettingsUpdate(BaseModel):
     showPublicNames: Optional[bool] = None
     highlightTopThree: Optional[bool] = None
     customNote: Optional[str] = None
+    eligibilityRule: Optional[Literal["any", "both"]] = None
 
 
 class AttemptOverrideRequest(BaseModel):

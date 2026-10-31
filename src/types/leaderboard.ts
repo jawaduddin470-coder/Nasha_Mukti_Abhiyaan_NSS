@@ -15,6 +15,10 @@ export interface LeaderboardEntryPublic {
   timeFormatted: string;
   badgeName: string;
   submittedAt: string;
+  completedQuizzes?: string[];
+  nashaMuktiScore?: number | null;
+  unityDayScore?: number | null;
+  quizzesAttemptedCount?: number;
 }
 
 export interface LeaderboardPublicResponse {
@@ -29,6 +33,7 @@ export interface LeaderboardPublicResponse {
   customNote?: string | null;
   showPublicNames: boolean;
   highlightTopThree: boolean;
+  eligibilityRule?: 'any' | 'both';
   totalParticipants: number;
   publishedAt?: string | null;
   entries: LeaderboardEntryPublic[];
@@ -62,6 +67,12 @@ export interface LeaderboardEntryAdmin {
   timeFormatted: string;
   badgeName: string;
   submittedAt: string;
+  completedQuizzes?: string[];
+  nashaMuktiScore?: number | null;
+  unityDayScore?: number | null;
+  quizzesAttemptedCount?: number;
+  nashaMuktiAttemptId?: string | null;
+  unityDayAttemptId?: string | null;
 }
 
 export interface LeaderboardAdminResponse {
@@ -75,6 +86,7 @@ export interface LeaderboardAdminResponse {
   announcementDate?: string | null;
   showPublicNames: boolean;
   highlightTopThree: boolean;
+  eligibilityRule?: 'any' | 'both';
   customNote?: string | null;
   totalParticipants: number;
   entries: LeaderboardEntryAdmin[];
@@ -92,6 +104,7 @@ export interface LeaderboardSettingsUpdate {
   showPublicNames?: boolean;
   highlightTopThree?: boolean;
   customNote?: string;
+  eligibilityRule?: 'any' | 'both';
 }
 
 export interface AttemptOverrideRequest {

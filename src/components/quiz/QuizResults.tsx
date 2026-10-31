@@ -26,12 +26,14 @@ interface QuizResultsProps {
   result: QuizResult;
   allowRetake?: boolean;
   onRetake?: () => void;
+  onBackToPortal?: () => void;
 }
 
 export const QuizResults: React.FC<QuizResultsProps> = ({
   result,
   allowRetake = true,
   onRetake,
+  onBackToPortal,
 }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -161,6 +163,17 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
               <Trophy className="w-3.5 h-3.5 text-amber-500" />
               <span>The Champions Board</span>
             </Link>
+
+            {onBackToPortal && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onBackToPortal}
+              >
+                &larr; All Challenges
+              </Button>
+            )}
           </div>
         </div>
       </Card>

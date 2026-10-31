@@ -17,6 +17,8 @@ from openpyxl.utils import get_column_letter
 from backend.app.core.permissions import require_super_admin, require_editor_or_above
 from backend.app.db.mongodb import get_database
 from backend.app.schemas.quiz import (
+    QuizConfigItem,
+    QuizConfigUpdate,
     QuizQuestionPublicResponse,
     QuizQuestionAdminResponse,
     QuizQuestionCreate,
@@ -46,19 +48,75 @@ def sanitize_excel_cell(val: Any) -> Any:
 
 
 # Public Endpoints
-@router.get("/quiz/public", response_model=List[QuizQuestionPublicResponse])
-async def get_public_quiz_questions(
+@router.get("/quiz/portal", response_model=List[QuizConfigItem])
+@router.get("/quiz/list", response_model=List[QuizConfigItem])
+async def list_public_quizzes(
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
     """
-    Returns public questions for participant attempts.
+    Returns all configured campaign quizzes for the Unified Quiz Portal.
+    Includes live question count and points calculated from database.
+    """
+    cursor = db["quizzes"].find().sort("displayOrder", 1)
+    quizzes = []
+    async for q in cursor:
+        q_id = q["id"]
+        meta = resolve_quiz_meta(q_id)
+        query_ids = meta.get("aliases", [q_id])
+
+        q_count = await db["quiz_questions"].count_documents({
+            "quizId": {"$in": query_ids},
+            "publicationStatus": "published",
+        })
+        pipeline = [
+            {"$match": {"quizId": {"$in": query_ids}, "publicationStatus": "published"}},
+            {"$group": {"_id": None, "total": {"$sum": "$points"}}},
+        ]
+        pts_agg = await db["quiz_questions"].aggregate(pipeline).to_list(1)
+        total_pts = pts_agg[0]["total"] if pts_agg else (q_count * 10)
+
+        quizzes.append(
+            QuizConfigItem(
+                id=q_id,
+                title=q.get("title", meta["title"]),
+                slug=q.get("slug", meta["slug"]),
+                description=q.get("description", ""),
+                badge=q.get("badge", "Official NSS Challenge"),
+                estimatedMinutes=q.get("estimatedMinutes", 10),
+                status=q.get("status", "active"),
+                theme=q.get("theme", "awareness"),
+                passingScorePercentage=q.get("passingScorePercentage", 70),
+                timeLimitMinutes=q.get("timeLimitMinutes", 15),
+                questionCount=q_count,
+                totalPoints=total_pts,
+            )
+        )
+    return quizzes
+
+
+@router.get("/quiz/public", response_model=List[QuizQuestionPublicResponse])
+@router.get("/quiz/public/{quiz_id}", response_model=List[QuizQuestionPublicResponse])
+async def get_public_quiz_questions(
+    quiz_id: Optional[str] = None,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Returns public questions for participant attempts for a specific quiz.
     STRICT SECURITY: Excludes 'correctAnswerIds' and 'explanation' to prevent cheating.
     """
-    cursor = db["quiz_questions"].find({"publicationStatus": "published"}).sort("displayOrder", 1)
+    target_id = (quiz_id or "nmba-awareness-challenge-v1").strip().lower()
+    meta = resolve_quiz_meta(target_id)
+    query_ids = meta.get("aliases", [meta["id"]])
+
+    cursor = db["quiz_questions"].find({
+        "quizId": {"$in": query_ids},
+        "publicationStatus": "published",
+    }).sort("displayOrder", 1)
+
     questions = []
     async for doc in cursor:
         doc["_id"] = str(doc["_id"])
-        # Ensure correct answers are stripped
+        # Ensure correct answers and explanations are stripped
         doc.pop("correctAnswerIds", None)
         doc.pop("explanation", None)
         questions.append(QuizQuestionPublicResponse(**doc))
@@ -72,10 +130,19 @@ async def submit_quiz_attempt(
 ):
     """
     Authoritative server-side quiz evaluation and participant attempt recording.
-    Calculates genuine score against canonical database records and returns result breakdown.
+    Calculates genuine score against canonical database records for the specific quiz
+    and returns result breakdown.
     """
-    # Fetch authoritative published questions with answers
-    cursor = db["quiz_questions"].find({"publicationStatus": "published"}).sort("displayOrder", 1)
+    target_id = payload.quizId.strip().lower()
+    meta = resolve_quiz_meta(target_id)
+    query_ids = meta.get("aliases", [meta["id"]])
+
+    # Fetch authoritative published questions with answers for this quiz
+    cursor = db["quiz_questions"].find({
+        "quizId": {"$in": query_ids},
+        "publicationStatus": "published",
+    }).sort("displayOrder", 1)
+
     canonical_questions = {}
     async for q in cursor:
         canonical_questions[q["id"]] = q
@@ -83,7 +150,7 @@ async def submit_quiz_attempt(
     if not canonical_questions:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Quiz questions are temporarily unavailable.",
+            detail=f"Quiz questions for '{meta['title']}' are temporarily unavailable.",
         )
 
     earned_score = 0
@@ -133,26 +200,41 @@ async def submit_quiz_attempt(
     percentage = round((earned_score / max_score) * 100) if max_score > 0 else 0
     passed = percentage >= 70
 
-    # Assign badge and message
-    if percentage >= 90:
-        badge_name = "Nasha Mukti Campus Champion"
-        badge_desc = "Exceptional mastery of prevention science, refusal agency, and community care."
-        summary_msg = "Outstanding! You have demonstrated exceptional awareness of substance dependency science and compassionate peer support."
-    elif percentage >= 70:
-        badge_name = "Informed Peer Advocate"
-        badge_desc = "Solid grasp of neurobiology, de-escalation, and verified helplines."
-        summary_msg = "Well done! You possess the essential knowledge to make conscious choices and support peers in need."
+    # Assign quiz-specific badge and feedback message
+    is_unity = meta["id"] == "national-unity-day-quiz-v1"
+    if is_unity:
+        if percentage >= 90:
+            badge_name = "Rashtriya Ekta Champion"
+            badge_desc = "Exemplary understanding of national integration, constitutional duties, and Sardar Patel's legacy."
+            summary_msg = "Outstanding! You have demonstrated exceptional mastery of India's unity, constitutional values, and civic heritage."
+        elif percentage >= 70:
+            badge_name = "Patriotic Civic Ambassador"
+            badge_desc = "Distinguished appreciation of Indian unity in diversity and selfless community service."
+            summary_msg = "Well done! You embody the spirit of national unity and collegiate civic responsibility."
+        else:
+            badge_name = "National Unity Contributor"
+            badge_desc = "Engaged participant exploring India's heritage, integration, and civic responsibilities."
+            summary_msg = "Knowledge inspires nation building. Review the question explanations below to deepen your understanding of India's heritage."
     else:
-        badge_name = "Awareness Contributor"
-        badge_desc = "Completed the curriculum review and engaged in conscious learning."
-        summary_msg = "Knowledge grows with reflection. Review the question explanations below to deepen your awareness of recovery science."
+        if percentage >= 90:
+            badge_name = "Nasha Mukti Campus Champion"
+            badge_desc = "Exceptional mastery of prevention science, refusal agency, and community care."
+            summary_msg = "Outstanding! You have demonstrated exceptional awareness of substance dependency science and compassionate peer support."
+        elif percentage >= 70:
+            badge_name = "Informed Peer Advocate"
+            badge_desc = "Solid grasp of neurobiology, de-escalation, and verified helplines."
+            summary_msg = "Well done! You possess the essential knowledge to make conscious choices and support peers in need."
+        else:
+            badge_name = "Awareness Contributor"
+            badge_desc = "Completed the curriculum review and engaged in conscious learning."
+            summary_msg = "Knowledge grows with reflection. Review the question explanations below to deepen your awareness of recovery science."
 
     now_iso = datetime.now(timezone.utc).isoformat()
     attempt_id = f"atmpt-{int(datetime.now().timestamp() * 1000)}"
 
     attempt_doc = {
         "attemptId": attempt_id,
-        "quizId": payload.quizId,
+        "quizId": meta["id"],
         "participant": payload.participant.model_dump(),
         "score": earned_score,
         "maxScore": max_score,
@@ -174,7 +256,7 @@ async def submit_quiz_attempt(
 
     return QuizAttemptResult(
         attemptId=attempt_id,
-        quizId=payload.quizId,
+        quizId=meta["id"],
         participantName=payload.participant.fullName.strip(),
         participantInstitution=payload.participant.institutionName.strip(),
         submittedAt=now_iso,
@@ -193,17 +275,128 @@ async def submit_quiz_attempt(
     )
 
 
-# Protected CMS Endpoints for Quiz Questions
-@router.get("/admin/quiz/questions", response_model=List[QuizQuestionAdminResponse])
-async def list_admin_quiz_questions(
+# Protected CMS Endpoints for Quiz Management
+@router.get("/admin/quizzes", response_model=List[QuizConfigItem])
+async def list_admin_quizzes(
     current_admin: Dict[str, Any] = Depends(require_editor_or_above),
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
-    """Retrieves all questions including correct answers and explanations for CMS."""
-    cursor = db["quiz_questions"].find().sort("displayOrder", 1)
+    """Lists all quizzes with configuration settings and live statistics for CMS."""
+    cursor = db["quizzes"].find().sort("displayOrder", 1)
+    quizzes = []
+    async for q in cursor:
+        q_id = q["id"]
+        meta = resolve_quiz_meta(q_id)
+        query_ids = meta.get("aliases", [q_id])
+
+        q_count = await db["quiz_questions"].count_documents({"quizId": {"$in": query_ids}})
+        pipeline = [
+            {"$match": {"quizId": {"$in": query_ids}}},
+            {"$group": {"_id": None, "total": {"$sum": "$points"}}},
+        ]
+        pts_agg = await db["quiz_questions"].aggregate(pipeline).to_list(1)
+        total_pts = pts_agg[0]["total"] if pts_agg else (q_count * 10)
+
+        quizzes.append(
+            QuizConfigItem(
+                id=q_id,
+                title=q.get("title", meta["title"]),
+                slug=q.get("slug", meta["slug"]),
+                description=q.get("description", ""),
+                badge=q.get("badge", "Official NSS Challenge"),
+                estimatedMinutes=q.get("estimatedMinutes", 10),
+                status=q.get("status", "active"),
+                theme=q.get("theme", "awareness"),
+                passingScorePercentage=q.get("passingScorePercentage", 70),
+                timeLimitMinutes=q.get("timeLimitMinutes", 15),
+                questionCount=q_count,
+                totalPoints=total_pts,
+            )
+        )
+    return quizzes
+
+
+@router.put("/admin/quizzes/{quiz_id}", response_model=QuizConfigItem)
+async def update_admin_quiz_config(
+    quiz_id: str,
+    payload: QuizConfigUpdate,
+    current_admin: Dict[str, Any] = Depends(require_editor_or_above),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Updates quiz configuration (title, description, badge, duration, status, pass percentage).
+    STRICT RBAC: Editors and Super Admins.
+    """
+    meta = resolve_quiz_meta(quiz_id)
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    update_dict = {k: v for k, v in payload.model_dump().items() if v is not None}
+    update_dict["updatedAt"] = now_iso
+
+    await db["quizzes"].update_one(
+        {"id": meta["id"]},
+        {"$set": update_dict},
+        upsert=True,
+    )
+
+    await record_audit_log(
+        db,
+        actor_email=current_admin["email"],
+        action="update_quiz_config",
+        module="quizzes",
+        record_id=meta["id"],
+        metadata={"changes": list(update_dict.keys())},
+    )
+
+    q = await db["quizzes"].find_one({"id": meta["id"]})
+    query_ids = meta.get("aliases", [meta["id"]])
+    q_count = await db["quiz_questions"].count_documents({"quizId": {"$in": query_ids}})
+    pipeline = [
+        {"$match": {"quizId": {"$in": query_ids}}},
+        {"$group": {"_id": None, "total": {"$sum": "$points"}}},
+    ]
+    pts_agg = await db["quiz_questions"].aggregate(pipeline).to_list(1)
+    total_pts = pts_agg[0]["total"] if pts_agg else (q_count * 10)
+
+    return QuizConfigItem(
+        id=meta["id"],
+        title=q.get("title", meta["title"]),
+        slug=q.get("slug", meta["slug"]),
+        description=q.get("description", ""),
+        badge=q.get("badge", "Official NSS Challenge"),
+        estimatedMinutes=q.get("estimatedMinutes", 10),
+        status=q.get("status", "active"),
+        theme=q.get("theme", "awareness"),
+        passingScorePercentage=q.get("passingScorePercentage", 70),
+        timeLimitMinutes=q.get("timeLimitMinutes", 15),
+        questionCount=q_count,
+        totalPoints=total_pts,
+    )
+
+
+# Protected CMS Endpoints for Quiz Questions
+@router.get("/admin/quiz/questions", response_model=List[QuizQuestionAdminResponse])
+async def list_admin_quiz_questions(
+    quiz_id: Optional[str] = Query(None),
+    current_admin: Dict[str, Any] = Depends(require_editor_or_above),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Retrieves questions including correct answers and explanations for CMS.
+    Supports filtering by specific quiz (e.g. ?quiz_id=national-unity-day-quiz-v1).
+    """
+    filter_query: Dict[str, Any] = {}
+    if quiz_id and quiz_id.strip() and quiz_id.strip() != "all":
+        meta = resolve_quiz_meta(quiz_id)
+        query_ids = meta.get("aliases", [meta["id"]])
+        filter_query["quizId"] = {"$in": query_ids}
+
+    cursor = db["quiz_questions"].find(filter_query).sort("displayOrder", 1)
     results = []
     async for doc in cursor:
         doc["_id"] = str(doc["_id"])
+        if "quizId" not in doc or not doc["quizId"]:
+            doc["quizId"] = "nmba-awareness-challenge-v1"
         results.append(QuizQuestionAdminResponse(**doc))
     return results
 
@@ -214,12 +407,14 @@ async def create_quiz_question(
     current_admin: Dict[str, Any] = Depends(require_editor_or_above),
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
-    """Creates a new quiz question."""
+    """Creates a new quiz question under the specified quiz."""
     now_iso = datetime.now(timezone.utc).isoformat()
     q_id = f"q-{int(datetime.now().timestamp() * 1000) % 1000000}"
 
     doc = payload.model_dump()
     doc["id"] = q_id
+    if not doc.get("quizId"):
+        doc["quizId"] = "nmba-awareness-challenge-v1"
     doc["createdAt"] = now_iso
     doc["updatedAt"] = now_iso
 
@@ -230,7 +425,7 @@ async def create_quiz_question(
         action="create_quiz_question",
         module="quiz_questions",
         record_id=q_id,
-        metadata={"category": payload.category},
+        metadata={"category": payload.category, "quizId": doc["quizId"]},
     )
 
     doc["_id"] = str(doc.get("_id", ""))
@@ -468,6 +663,12 @@ QUIZ_REGISTRY = {
         "slug": "national-unity-day",
         "aliases": ["national-unity-day-quiz-v1", "national-unity-day", "unity", "unity-day"],
     },
+    "unified-nss-mjcet-leaderboard": {
+        "id": "unified-nss-mjcet-leaderboard",
+        "title": "Unified NSS MJCET Leaderboard",
+        "slug": "unified",
+        "aliases": ["unified-nss-mjcet-leaderboard", "unified", "combined", "all"],
+    },
 }
 
 
@@ -530,12 +731,182 @@ async def get_or_create_leaderboard_record(
             "announcementDate": None,
             "showPublicNames": True,
             "highlightTopThree": True,
-            "customNote": "Official results authenticated by NSS MJCET Examination Authority.",
+            "eligibilityRule": "any",
+            "customNote": "Official certified rankings authenticated by NSS MJCET Examination Authority.",
             "createdAt": now_iso,
             "updatedAt": now_iso,
         }
         await db["quiz_leaderboards"].insert_one(record)
     return record
+
+
+async def compute_unified_rankings(
+    db: AsyncIOMotorDatabase,
+    cfg: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    """
+    Computes authoritative combined rankings across both quizzes:
+    1. Aggregates attempts per participant email.
+    2. Takes the best score and lowest time for each quiz.
+    3. Sums combinedScore and totalTimeSeconds.
+    4. Applies eligibility rule ('any' or 'both').
+    5. Standard Olympic ranking based on (-combinedScore, totalTimeSeconds, latest_submittedAt).
+    """
+    cursor = db["quiz_attempts"].find()
+    attempts = []
+    async for a in cursor:
+        attempts.append(a)
+
+    eligibility = cfg.get("eligibilityRule", "any")
+
+    # Group attempts by normalized participant email (or fallback to rollNumber / name)
+    participants_map: Dict[str, Dict[str, Any]] = {}
+
+    nmba_aliases = [a.lower() for a in QUIZ_REGISTRY["nmba-awareness-challenge-v1"]["aliases"]]
+    unity_aliases = [a.lower() for a in QUIZ_REGISTRY["national-unity-day-quiz-v1"]["aliases"]]
+
+    for a in attempts:
+        p = a.get("participant", {})
+        email = (p.get("email") or "").strip().lower()
+        roll = (p.get("rollNumber") or "").strip().upper()
+        name = (p.get("fullName") or "Participant").strip()
+
+        key = email if email else (roll if roll else name.lower())
+        if not key:
+            continue
+
+        if key not in participants_map:
+            participants_map[key] = {
+                "participant": p,
+                "nmba_best": None,
+                "unity_best": None,
+            }
+
+        q_id = (a.get("quizId") or "nmba-awareness-challenge-v1").strip().lower()
+
+        def is_better(new_att, old_att):
+            if not old_att:
+                return True
+            n_score = new_att.get("score", 0)
+            o_score = old_att.get("score", 0)
+            if n_score > o_score:
+                return True
+            if n_score == o_score:
+                n_time = new_att.get("timeTakenSeconds") or 999999
+                o_time = old_att.get("timeTakenSeconds") or 999999
+                return n_time < o_time
+            return False
+
+        if q_id in nmba_aliases or q_id == "nmba-awareness-challenge-v1":
+            if is_better(a, participants_map[key]["nmba_best"]):
+                participants_map[key]["nmba_best"] = a
+        elif q_id in unity_aliases or q_id == "national-unity-day-quiz-v1":
+            if is_better(a, participants_map[key]["unity_best"]):
+                participants_map[key]["unity_best"] = a
+
+    combined_list = []
+    for key, data in participants_map.items():
+        nmba_att = data["nmba_best"]
+        unity_att = data["unity_best"]
+
+        has_nmba = nmba_att is not None
+        has_unity = unity_att is not None
+
+        if eligibility == "both" and not (has_nmba and has_unity):
+            continue
+        if not (has_nmba or has_unity):
+            continue
+
+        completed_quizzes = []
+        if has_nmba:
+            completed_quizzes.append("nmba-awareness-challenge-v1")
+        if has_unity:
+            completed_quizzes.append("national-unity-day-quiz-v1")
+
+        p = (nmba_att or unity_att).get("participant", {})
+        nmba_score = nmba_att.get("score", 0) if has_nmba else 0
+        nmba_max = nmba_att.get("maxScore", 100) if has_nmba else 100
+        unity_score = unity_att.get("score", 0) if has_unity else 0
+        unity_max = unity_att.get("maxScore", 100) if has_unity else 100
+
+        total_score = nmba_score + unity_score
+        total_max = (nmba_max if has_nmba else 0) + (unity_max if has_unity else 0)
+        percentage = round((total_score / total_max) * 100) if total_max > 0 else 0
+
+        nmba_time = nmba_att.get("timeTakenSeconds", 0) or 0 if has_nmba else 0
+        unity_time = unity_att.get("timeTakenSeconds", 0) or 0 if has_unity else 0
+        total_time = nmba_time + unity_time
+
+        nmba_date = nmba_att.get("submittedAt", "") if has_nmba else ""
+        unity_date = unity_att.get("submittedAt", "") if has_unity else ""
+        latest_submitted = max(nmba_date, unity_date)
+
+        # Assign badge
+        if len(completed_quizzes) == 2:
+            if percentage >= 85:
+                badge = "NSS MJCET Dual Champion"
+            else:
+                badge = "National Solidarity Advocate"
+        elif has_nmba:
+            badge = "Campus Awareness Contributor"
+        else:
+            badge = "National Unity Contributor"
+
+        combined_list.append({
+            "attemptId": f"unified-{(nmba_att or unity_att).get('attemptId', key)}",
+            "participantName": p.get("fullName", "Participant").strip(),
+            "participantEmail": p.get("email", ""),
+            "participantInstitution": p.get("institutionName", "MJCET").strip(),
+            "rollNumber": p.get("rollNumber", ""),
+            "phone": p.get("phone", ""),
+            "department": p.get("department", ""),
+            "yearOfStudy": p.get("yearOfStudy", ""),
+            "score": total_score,
+            "maxScore": total_max,
+            "percentage": percentage,
+            "passed": percentage >= 70,
+            "timeTakenSeconds": total_time,
+            "timeFormatted": format_duration_string(total_time),
+            "badgeName": badge,
+            "submittedAt": latest_submitted,
+            "completedQuizzes": completed_quizzes,
+            "quizzesAttemptedCount": len(completed_quizzes),
+            "nashaMuktiScore": nmba_score if has_nmba else None,
+            "unityDayScore": unity_score if has_unity else None,
+            "nashaMuktiAttemptId": nmba_att.get("attemptId") if has_nmba else None,
+            "unityDayAttemptId": unity_att.get("attemptId") if has_unity else None,
+        })
+
+    # Sort: -score, total_time, latest_submitted
+    def sort_key(item):
+        t = item["timeTakenSeconds"]
+        t_val = 999999 if (t is None or t <= 0) else t
+        return (-item["score"], t_val, item["submittedAt"])
+
+    combined_list.sort(key=sort_key)
+
+    ranked_items = []
+    current_rank = 0
+    prev_score = None
+    prev_time = None
+
+    for idx, doc in enumerate(combined_list):
+        score = doc["score"]
+        time_sec = doc["timeTakenSeconds"]
+
+        is_tie = (prev_score is not None and score == prev_score and time_sec == prev_time)
+        if is_tie:
+            rank = current_rank
+        else:
+            current_rank = idx + 1
+            rank = current_rank
+            prev_score = score
+            prev_time = time_sec
+
+        doc["rank"] = rank
+        ranked_items.append(doc)
+
+    return ranked_items
 
 
 async def compute_quiz_rankings(
@@ -548,6 +919,10 @@ async def compute_quiz_rankings(
     2. Shorter completion time ranks higher (ascending seconds).
     3. Handles exact ties transparently.
     """
+    if quiz_meta["id"] == "unified-nss-mjcet-leaderboard":
+        cfg = await get_or_create_leaderboard_record(db, quiz_meta)
+        return await compute_unified_rankings(db, cfg)
+
     query_ids = quiz_meta.get("aliases", [quiz_meta["id"]])
     cursor = db["quiz_attempts"].find({"quizId": {"$in": query_ids}})
     attempts = []
@@ -603,6 +978,12 @@ async def compute_quiz_rankings(
             "timeFormatted": format_duration_string(time_sec),
             "badgeName": doc.get("badgeName", "Participant"),
             "submittedAt": doc.get("submittedAt", ""),
+            "completedQuizzes": [quiz_meta["id"]],
+            "quizzesAttemptedCount": 1,
+            "nashaMuktiScore": score if "nmba" in quiz_meta["id"] else None,
+            "unityDayScore": score if "unity" in quiz_meta["id"] else None,
+            "nashaMuktiAttemptId": doc.get("attemptId") if "nmba" in quiz_meta["id"] else None,
+            "unityDayAttemptId": doc.get("attemptId") if "unity" in quiz_meta["id"] else None,
         })
 
     return ranked_items
@@ -612,11 +993,16 @@ async def compute_quiz_rankings(
 async def list_public_quiz_leaderboards(
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
-    """Returns overview of public leaderboards for all active campaign quizzes."""
+    """Returns overview of public leaderboards for all active campaign quizzes and unified board."""
     results = []
     for q_key, meta in QUIZ_REGISTRY.items():
         cfg = await get_or_create_leaderboard_record(db, meta)
-        count = await db["quiz_attempts"].count_documents({"quizId": {"$in": meta["aliases"]}})
+        if meta["id"] == "unified-nss-mjcet-leaderboard":
+            # Count distinct participants across all attempts
+            distinct_emails = await db["quiz_attempts"].distinct("participant.email")
+            count = len([e for e in distinct_emails if e])
+        else:
+            count = await db["quiz_attempts"].count_documents({"quizId": {"$in": meta["aliases"]}})
         results.append(
             LeaderboardSummaryItem(
                 quizId=meta["id"],
@@ -637,7 +1023,7 @@ async def get_public_quiz_leaderboard(
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
     """
-    Public leaderboard endpoint for a specific quiz.
+    Public leaderboard endpoint for a specific quiz or the unified leaderboard.
     STRICT SECURITY:
     If results are unpublished (isPublished == False), returns announcement state
     with 'entries = []'. Scores and rankings remain completely hidden.
@@ -646,7 +1032,11 @@ async def get_public_quiz_leaderboard(
     cfg = await get_or_create_leaderboard_record(db, meta)
     is_published = cfg.get("isPublished", False)
 
-    total_participants = await db["quiz_attempts"].count_documents({"quizId": {"$in": meta["aliases"]}})
+    if meta["id"] == "unified-nss-mjcet-leaderboard":
+        distinct_emails = await db["quiz_attempts"].distinct("participant.email")
+        total_participants = len([e for e in distinct_emails if e])
+    else:
+        total_participants = await db["quiz_attempts"].count_documents({"quizId": {"$in": meta["aliases"]}})
 
     if not is_published:
         return LeaderboardPublicResponse(
@@ -655,22 +1045,27 @@ async def get_public_quiz_leaderboard(
             quizSlug=meta["slug"],
             isPublished=False,
             status="coming_soon",
-            message="RESULTS COMING SOON",
+            message="RESULTS TO BE ANNOUNCED SOON",
             supportingText=(
-                "The quiz has concluded. Our team is preparing the official results. "
-                "Stay tuned as we get ready to celebrate the participants and announce the champions."
+                "Our participants have taken on the challenge. "
+                "Official results and rankings will be revealed soon by NSS MJCET. Stay tuned!"
             ),
             announcementDate=cfg.get("announcementDate"),
             customNote=cfg.get("customNote"),
             showPublicNames=cfg.get("showPublicNames", True),
             highlightTopThree=cfg.get("highlightTopThree", True),
+            eligibilityRule=cfg.get("eligibilityRule", "any"),
             totalParticipants=total_participants,
             publishedAt=None,
             entries=[],
         )
 
     # Published state: compute official leaderboard
-    ranked = await compute_quiz_rankings(db, meta)
+    if meta["id"] == "unified-nss-mjcet-leaderboard":
+        ranked = await compute_unified_rankings(db, cfg)
+    else:
+        ranked = await compute_quiz_rankings(db, meta)
+
     show_names = cfg.get("showPublicNames", True)
 
     public_entries: List[LeaderboardEntryPublic] = []
@@ -689,6 +1084,10 @@ async def get_public_quiz_leaderboard(
                 timeFormatted=item["timeFormatted"],
                 badgeName=item["badgeName"],
                 submittedAt=item["submittedAt"],
+                completedQuizzes=item.get("completedQuizzes"),
+                nashaMuktiScore=item.get("nashaMuktiScore"),
+                unityDayScore=item.get("unityDayScore"),
+                quizzesAttemptedCount=item.get("quizzesAttemptedCount"),
             )
         )
 
@@ -704,6 +1103,7 @@ async def get_public_quiz_leaderboard(
         customNote=cfg.get("customNote"),
         showPublicNames=show_names,
         highlightTopThree=cfg.get("highlightTopThree", True),
+        eligibilityRule=cfg.get("eligibilityRule", "any"),
         totalParticipants=total_participants,
         publishedAt=cfg.get("publishedAt"),
         entries=public_entries,
@@ -721,12 +1121,16 @@ async def get_admin_quiz_leaderboard(
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
     """
-    Returns full admin preview of calculated leaderboard for any quiz.
+    Returns full admin preview of calculated leaderboard for any quiz or the unified leaderboard.
     Available to Editors and Super Admins for verification.
     """
     meta = resolve_quiz_meta(quiz_id)
     cfg = await get_or_create_leaderboard_record(db, meta)
-    ranked = await compute_quiz_rankings(db, meta)
+
+    if meta["id"] == "unified-nss-mjcet-leaderboard":
+        ranked = await compute_unified_rankings(db, cfg)
+    else:
+        ranked = await compute_quiz_rankings(db, meta)
 
     total_participants = len(ranked)
     avg_score = round(sum(r["score"] for r in ranked) / total_participants, 1) if total_participants > 0 else 0
@@ -748,6 +1152,7 @@ async def get_admin_quiz_leaderboard(
         announcementDate=cfg.get("announcementDate"),
         showPublicNames=cfg.get("showPublicNames", True),
         highlightTopThree=cfg.get("highlightTopThree", True),
+        eligibilityRule=cfg.get("eligibilityRule", "any"),
         customNote=cfg.get("customNote"),
         totalParticipants=total_participants,
         entries=admin_entries,
@@ -867,6 +1272,8 @@ async def update_quiz_leaderboard_settings(
         update_fields["highlightTopThree"] = payload.highlightTopThree
     if payload.customNote is not None:
         update_fields["customNote"] = payload.customNote.strip()
+    if payload.eligibilityRule is not None:
+        update_fields["eligibilityRule"] = payload.eligibilityRule
 
     await db["quiz_leaderboards"].update_one(
         {"quizId": meta["id"]},
