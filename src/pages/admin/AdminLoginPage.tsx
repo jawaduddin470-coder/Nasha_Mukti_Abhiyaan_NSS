@@ -50,7 +50,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ loginType }) => 
         {/* Institutional crest badge */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-[#EAF5FB] border border-[#CFE3F0] shadow-sm flex items-center justify-center p-2 mb-4">
-            <img src="/NSS-LOGO.png" alt="NSS Logo" className="w-full h-full object-contain" />
+            <img src="/assets/branding/nss-logo.png" alt="NSS Logo" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-xl font-bold tracking-tight text-[#183153] text-center font-serif">
             NSS MJCET Portal

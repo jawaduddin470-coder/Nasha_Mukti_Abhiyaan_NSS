@@ -107,7 +107,7 @@ export const AdminDashboardPage: React.FC = () => {
       {/* Mobile Header */}
       <div className="md:hidden bg-[#183153] border-b border-[#22416D] px-4 py-3 flex items-center justify-between sticky top-0 z-50 text-white">
         <div className="flex items-center gap-2.5">
-          <img src="/NSS-LOGO.png" alt="NSS Logo" className="w-7 h-7 object-contain" />
+          <img src="/assets/branding/nss-logo.png" alt="NSS Logo" className="w-7 h-7 object-contain" />
           <span className="font-bold text-sm text-white tracking-tight">NSS MJCET CMS</span>
         </div>
         <button
@@ -125,7 +125,7 @@ export const AdminDashboardPage: React.FC = () => {
         } md:flex flex-col w-full md:w-64 bg-[#183153] border-r border-[#152744] shrink-0 md:sticky md:top-0 md:h-screen text-white`}
       >
         <div className="p-5 border-b border-[#22416D] flex items-center gap-3">
-          <img src="/NSS-LOGO.png" alt="NSS Logo" className="w-9 h-9 object-contain" />
+          <img src="/assets/branding/nss-logo.png" alt="NSS Logo" className="w-9 h-9 object-contain" />
           <div>
             <h2 className="font-bold text-sm text-white tracking-tight">Nasha Mukti Portal</h2>
             <div className="flex items-center gap-1.5 mt-0.5">
