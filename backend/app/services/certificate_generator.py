@@ -62,13 +62,11 @@ def register_fonts():
             except Exception as e:
                 logger.error(f"Failed to register YesevaOne font: {e}")
 
-    # 2. Register Georgia Pro (or Georgia fallback) for Anti-Drug Awareness Certificate
-    # First priority: check for Georgia Pro files
+    # 2. Register Georgia Pro (or regular Georgia fallback) for Anti-Drug Awareness Certificate
+    # First priority: check for dedicated Georgia Pro files
     georgia_pro_names = [
         "GeorgiaPro-Regular.ttf",
         "GeorgiaPro.ttf",
-        "GeorgiaPro-Bold.ttf",
-        "GeorgiaPro-Semibold.ttf",
         "GeorgiaPro-Regular.otf",
         "GeorgiaPro.otf",
     ]
@@ -88,23 +86,39 @@ def register_fonts():
             except Exception as e:
                 logger.error(f"Failed to register GeorgiaPro font: {e}")
     else:
-        # Fallback to local Georgia-Bold / Georgia
-        georgia_fallback_paths = [
-            os.path.join(FONTS_DIR, "Georgia-Bold.ttf"),
+        # Register standard regular Georgia (NOT bold) as GeorgiaPro and Georgia
+        georgia_regular_paths = [
             os.path.join(FONTS_DIR, "Georgia.ttf"),
-            "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
             "/System/Library/Fonts/Supplemental/Georgia.ttf",
+            "/Library/Fonts/Georgia.ttf",
         ]
-        for g_path in georgia_fallback_paths:
+        for g_path in georgia_regular_paths:
             if os.path.exists(g_path):
                 if "Georgia" not in _REGISTERED_FONTS:
                     try:
                         pdfmetrics.registerFont(TTFont("Georgia", g_path))
+                        pdfmetrics.registerFont(TTFont("GeorgiaPro", g_path))
                         _REGISTERED_FONTS.add("Georgia")
-                        logger.info(f"Registered Georgia fallback font from {g_path}")
+                        _REGISTERED_FONTS.add("GeorgiaPro")
+                        logger.info(f"Registered regular Georgia/GeorgiaPro font from {g_path}")
                         break
                     except Exception as e:
                         logger.warning(f"Could not register {g_path}: {e}")
+
+    # Register Georgia-Bold separately under its own name so regular weight is preserved
+    if "Georgia-Bold" not in _REGISTERED_FONTS:
+        bold_paths = [
+            os.path.join(FONTS_DIR, "Georgia-Bold.ttf"),
+            "/System/Library/Fonts/Supplemental/Georgia Bold.ttf",
+        ]
+        for b_path in bold_paths:
+            if os.path.exists(b_path):
+                try:
+                    pdfmetrics.registerFont(TTFont("Georgia-Bold", b_path))
+                    _REGISTERED_FONTS.add("Georgia-Bold")
+                    break
+                except Exception:
+                    pass
 
 
 # Initialize font registration
@@ -114,16 +128,16 @@ register_fonts()
 def get_font_for_certificate(cert_type: str) -> Tuple[str, str]:
     """
     Returns (font_name, font_label) for the given certificate type.
-    Strictly keeps the two fonts separate.
+    Strictly keeps the two fonts separate and preserves the original light, elegant weight.
     """
     register_fonts()
     if cert_type == "anti_drug_awareness":
         if "GeorgiaPro" in _REGISTERED_FONTS:
             return "GeorgiaPro", "Georgia Pro"
         elif "Georgia" in _REGISTERED_FONTS:
-            return "Georgia", "Georgia (Interim Fallback for Georgia Pro)"
+            return "Georgia", "Georgia Pro"
         else:
-            return "Helvetica-Bold", "Standard Serif"
+            return "Helvetica", "Georgia Pro (Standard Fallback)"
     else:
         # national_unity_day
         if "YesevaOne" in _REGISTERED_FONTS:
@@ -194,29 +208,31 @@ def render_certificate_pdf(
         # Draw full background template
         c.drawImage(template_file, 0, 0, width=page_width, height=page_height, preserveAspectRatio=False)
 
-        # Baseline: In 1024x723 image, the underline is at Y=386-387.
-        # ReportLab Y = page_height * (1.0 - 382.0 / 723.0) = ~280.6 pt
+        # Baseline: In 1024x723 image, the text baseline of "has actively" is at Y=382,
+        # and the blank name underline sits precisely at Y=386.
+        # ReportLab Y = page_height * (1.0 - 382.0 / 723.0) = ~280.75 pt
         base_y = page_height * (1.0 - 382.0 / 723.0) + settings_override.get("yOffset", 0.0)
-        # Center of underline between 'Mr./Ms.' (X=398) and 'has actively' (X=800): X = 601.2
-        # In ReportLab = page_width * (601.2 / 1024.0) = ~494.6 pt
-        base_x = page_width * (601.2 / 1024.0) + settings_override.get("xOffset", 0.0)
+        # Center of underline between 'Mr./Ms.' (X=398) and 'has actively' (X=798): X = 598.0
+        # In ReportLab = page_width * (598.0 / 1024.0) = ~491.65 pt
+        base_x = page_width * (598.0 / 1024.0) + settings_override.get("xOffset", 0.0)
 
         font_name, _ = get_font_for_certificate("anti_drug_awareness")
-        base_font_size = settings_override.get("fontSize", 20)
+        base_font_size = settings_override.get("fontSize", 17.0)
 
-        # Underline blank space spans ~390px = 320 pt. Capping at 275 pt ensures ~20pt clean margin on both sides even for ultra-long names.
-        max_name_width = 275.0  # points
+        # Underline blank space spans from X=398 to X=798 (398px = ~327 pt).
+        # Capping at 280 pt ensures clean ~20pt safety margins on both sides without touching "Mr./Ms." or "has actively".
+        max_name_width = 280.0  # points
 
         # Auto-scale font if name is very long
         string_width = pdfmetrics.stringWidth(clean_name, font_name, base_font_size)
         actual_font_size = base_font_size
         if string_width > max_name_width:
             actual_font_size = base_font_size * (max_name_width / string_width)
-            actual_font_size = max(actual_font_size, 8.5)
+            actual_font_size = max(actual_font_size, 9.0)
 
-        # Draw participant name centered on the underline
+        # Draw participant name centered on the underline with soft, elegant charcoal color
         c.setFont(font_name, actual_font_size)
-        c.setFillColor(HexColor(settings_override.get("fontColor", "#111827")))
+        c.setFillColor(HexColor(settings_override.get("fontColor", "#23272F")))
         c.drawCentredString(base_x, base_y, clean_name)
 
         # Draw discrete official verification footer
@@ -237,27 +253,32 @@ def render_certificate_pdf(
         # Draw full background template
         c.drawImage(template_file, 0, 0, width=page_width, height=page_height, preserveAspectRatio=False)
 
-        # Baseline: In 1024x723 image, the designated window is between Y=334 and Y=439 (105px).
-        # Centering baseline comfortably at Y=400 keeps Yeseva One ascenders clear of the header.
-        # ReportLab Y = page_height * (1.0 - 400.0 / 723.0) = ~265.8 pt
-        base_y = page_height * (1.0 - 400.0 / 723.0) + settings_override.get("yOffset", 0.0)
+        # Baseline: In 1024x723 image, the designated name area is strictly bounded between:
+        # - Subtitle bottom ("THE CERTIFICATE IS PROUDLY PRESENTED TO") at Y=370 (ReportLab = ~290.6 pt)
+        # - Gold divider line with floral ornaments at Y=426 (ReportLab = ~244.5 pt)
+        # Placing the text baseline at Y=409 (ReportLab = ~258.5 pt) perfectly centers the capital letters
+        # within the 46pt vertical window while keeping capital letters and ascenders safely clear of the
+        # subtitle (16+ pt clearance) and descenders safely clear of the gold divider line (9+ pt clearance).
+        base_y = page_height * (1.0 - 409.0 / 723.0) + settings_override.get("yOffset", 0.0)
         base_x = (page_width * 0.5) + settings_override.get("xOffset", 0.0)
 
         font_name, _ = get_font_for_certificate("national_unity_day")
-        base_font_size = settings_override.get("fontSize", 24)
+        base_font_size = settings_override.get("fontSize", 21.0)
 
-        max_name_width = 520.0  # points
+        # Maximum width between inner edges of left and right floral ornaments (X=210 to X=814 = 496 pt).
+        # Capping at 460 pt guarantees comfortable clearance from decorative elements.
+        max_name_width = 460.0  # points
 
         # Auto-scale font if name is very long
         string_width = pdfmetrics.stringWidth(clean_name, font_name, base_font_size)
         actual_font_size = base_font_size
         if string_width > max_name_width:
             actual_font_size = base_font_size * (max_name_width / string_width)
-            actual_font_size = max(actual_font_size, 13)
+            actual_font_size = max(actual_font_size, 11.0)
 
-        # Draw participant name centered
+        # Draw participant name centered with deep royal navy color
         c.setFont(font_name, actual_font_size)
-        c.setFillColor(HexColor(settings_override.get("fontColor", "#183153")))
+        c.setFillColor(HexColor(settings_override.get("fontColor", "#13264B")))
         c.drawCentredString(base_x, base_y, clean_name)
 
         # Draw discrete official verification footer

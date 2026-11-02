@@ -155,16 +155,32 @@ export const CertificateRevealCard: React.FC<CertificateRevealCardProps> = ({
           />
 
           {/* Realistic text overlay preview simulating participant name */}
-          <div className="absolute inset-0 flex flex-col justify-center items-center pointer-events-none px-6">
+          <div className="absolute inset-0 pointer-events-none">
             {isUnity ? (
-              <div className="mt-[-2%] text-center">
-                <span className="font-serif text-sm sm:text-lg md:text-xl font-bold text-[#183153] drop-shadow-xs tracking-wide">
+              <div
+                className="absolute text-center"
+                style={{
+                  top: '55.5%',
+                  left: '14%',
+                  right: '14%',
+                  transform: 'translateY(-50%)',
+                }}
+              >
+                <span className="font-serif text-sm sm:text-base md:text-xl font-bold text-[#13264B] tracking-wide">
                   {certificate.participantName}
                 </span>
               </div>
             ) : (
-              <div className="mt-[-4%] ml-[16%] w-[60%] text-center">
-                <span className="font-serif text-xs sm:text-base md:text-lg font-bold text-[#111827] drop-shadow-xs">
+              <div
+                className="absolute text-center"
+                style={{
+                  top: '52.5%',
+                  left: '38.9%',
+                  width: '39.0%',
+                  transform: 'translateY(-50%)',
+                }}
+              >
+                <span className="font-serif text-xs sm:text-sm md:text-base font-normal text-[#23272F]">
                   {certificate.participantName}
                 </span>
               </div>

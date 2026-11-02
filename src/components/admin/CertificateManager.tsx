@@ -39,12 +39,12 @@ export const CertificateManager: React.FC<{ isSuperAdmin?: boolean }> = ({ isSup
 
   // Interactive Live Positioning Inputs
   const [antiDrugEnabled, setAntiDrugEnabled] = useState<boolean>(true);
-  const [antiDrugFontSize, setAntiDrugFontSize] = useState<number>(20);
+  const [antiDrugFontSize, setAntiDrugFontSize] = useState<number>(17);
   const [antiDrugYOffset, setAntiDrugYOffset] = useState<number>(0);
   const [antiDrugXOffset, setAntiDrugXOffset] = useState<number>(0);
 
   const [unityDayEnabled, setUnityDayEnabled] = useState<boolean>(true);
-  const [unityDayFontSize, setUnityDayFontSize] = useState<number>(26);
+  const [unityDayFontSize, setUnityDayFontSize] = useState<number>(21);
   const [unityDayYOffset, setUnityDayYOffset] = useState<number>(0);
   const [unityDayXOffset, setUnityDayXOffset] = useState<number>(0);
 
@@ -625,33 +625,37 @@ export const CertificateManager: React.FC<{ isSuperAdmin?: boolean }> = ({ isSup
                   />
 
                   {/* Overlaid preview text reflecting sliders */}
-                  <div className="absolute inset-0 flex flex-col justify-center items-center pointer-events-none px-6">
+                  <div className="absolute inset-0 pointer-events-none">
                     {selectedTemplateType === 'national_unity_day' ? (
                       <div
-                        className="text-center transition-all duration-100"
+                        className="absolute text-center transition-all duration-100"
                         style={{
-                          transform: `translate(${currentXOffset}px, ${-currentYOffset}px)`,
+                          top: '55.5%',
+                          left: '12%',
+                          right: '12%',
+                          transform: `translate(${currentXOffset}px, calc(-50% - ${currentYOffset}px))`,
                         }}
                       >
                         <span
-                          className="font-serif font-bold text-[#183153] tracking-wide"
-                          style={{ fontSize: `${currentFontSize * 0.75}px` }}
+                          className="font-serif font-bold text-[#13264B] tracking-wide"
+                          style={{ fontSize: `${currentFontSize * 0.72}px` }}
                         >
                           {previewTestName}
                         </span>
                       </div>
                     ) : (
                       <div
-                        className="text-center transition-all duration-100"
+                        className="absolute text-center transition-all duration-100"
                         style={{
-                          marginLeft: '16%',
-                          width: '60%',
-                          transform: `translate(${currentXOffset}px, ${-currentYOffset}px)`,
+                          top: '52.5%',
+                          left: '38.9%',
+                          width: '39.0%',
+                          transform: `translate(${currentXOffset}px, calc(-50% - ${currentYOffset}px))`,
                         }}
                       >
                         <span
-                          className="font-serif font-bold text-[#111827]"
-                          style={{ fontSize: `${currentFontSize * 0.75}px` }}
+                          className="font-serif font-normal text-[#23272F]"
+                          style={{ fontSize: `${currentFontSize * 0.72}px` }}
                         >
                           {previewTestName}
                         </span>
