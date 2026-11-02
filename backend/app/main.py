@@ -41,6 +41,7 @@ from backend.app.routers import (
     uploads,
     media,
     homepage,
+    certificates,
 )
 
 logging.basicConfig(
@@ -203,6 +204,7 @@ app.include_router(site_settings.router, prefix=API_V1_PREFIX)
 app.include_router(uploads.router, prefix=API_V1_PREFIX)
 app.include_router(media.router, prefix=API_V1_PREFIX)
 app.include_router(homepage.router, prefix=API_V1_PREFIX)
+app.include_router(certificates.router, prefix=API_V1_PREFIX)
 
 
 if __name__ == "__main__":

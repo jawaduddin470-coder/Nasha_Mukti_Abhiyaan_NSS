@@ -51,6 +51,7 @@ import { MediaItem, fetchMediaItems, deleteMediaAsset } from '../../services/med
 import { HomepageContentManager } from '../../components/admin/HomepageContentManager';
 import { QuizLeaderboardManager } from '../../components/admin/QuizLeaderboardManager';
 import { QuizCurriculumManager } from '../../components/admin/QuizCurriculumManager';
+import { CertificateManager } from '../../components/admin/CertificateManager';
 import { PermanentDeleteModal } from '../../components/admin/PermanentDeleteModal';
 import { activityService } from '../../services/activityService';
 import { galleryService } from '../../services/galleryService';
@@ -64,6 +65,7 @@ type TabKey =
   | 'media'
   | 'developers'
   | 'participants'
+  | 'certificates'
   | 'quiz_leaderboard'
   | 'quiz_questions'
   | 'awareness_messages'
@@ -226,6 +228,18 @@ export const AdminDashboardPage: React.FC = () => {
           </button>
 
           <button
+            onClick={() => handleTabChange('certificates')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all cursor-pointer ${
+              activeTab === 'certificates'
+                ? 'bg-[#159E9A] text-white font-semibold shadow-md'
+                : 'text-white/75 hover:bg-[#1E3B63] hover:text-white'
+            }`}
+          >
+            <Award className="w-4 h-4 text-amber-300" />
+            <span>Certificates</span>
+          </button>
+
+          <button
             onClick={() => handleTabChange('quiz_leaderboard')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all cursor-pointer ${
               activeTab === 'quiz_leaderboard'
@@ -338,6 +352,7 @@ export const AdminDashboardPage: React.FC = () => {
         {activeTab === 'media' && <MediaLibraryView />}
         {activeTab === 'developers' && <DevelopersView />}
         {activeTab === 'participants' && <QuizParticipantsView isSuperAdmin={isSuperAdmin} />}
+        {activeTab === 'certificates' && <CertificateManager isSuperAdmin={isSuperAdmin} />}
         {activeTab === 'quiz_leaderboard' && <QuizLeaderboardManager isSuperAdmin={isSuperAdmin} />}
         {activeTab === 'quiz_questions' && <QuizCurriculumManager isSuperAdmin={isSuperAdmin} />}
         {activeTab === 'awareness_messages' && <AwarenessMessagesView isSuperAdmin={isSuperAdmin} />}

@@ -21,6 +21,7 @@ import { QuizResult } from '../../types/quiz';
 import { getQuizCategoryMeta } from '../../data/quizData';
 import { useTheme } from '../../context/ThemeContext';
 import { quizService, PostQuizAwarenessMessage } from '../../services/quizService';
+import { CertificateRevealCard } from '../certificate/CertificateRevealCard';
 
 interface QuizResultsProps {
   result: QuizResult;
@@ -177,6 +178,15 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
           </div>
         </div>
       </Card>
+
+      {/* Official Certificate Success & Download Card */}
+      {result.passed && (
+        <CertificateRevealCard
+          attemptId={result.attemptId}
+          quizTitle={result.quizId?.includes('unity') ? 'National Unity Day Challenge' : 'Nasha Mukti Awareness Challenge'}
+          participantName={result.participantName}
+        />
+      )}
 
       {/* Question-by-Question Educational Review */}
       <div className="space-y-4">
