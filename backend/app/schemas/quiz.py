@@ -286,3 +286,37 @@ class AttemptOverrideRequest(BaseModel):
     timeTakenSeconds: Optional[int] = None
     participantName: Optional[str] = None
     notes: Optional[str] = None
+
+
+class AttemptDeleteRequest(BaseModel):
+    reason: Optional[str] = "Administrative removal"
+
+
+class ParticipantDeleteRequest(BaseModel):
+    email: str
+    reason: Optional[str] = "Administrative removal"
+    confirmation: str  # Must be "DELETE"
+
+
+class ParticipantRestoreRequest(BaseModel):
+    email: str
+
+
+class ParticipantPermanentDeleteRequest(BaseModel):
+    email: str
+    confirmation: str  # Must be "DELETE"
+
+
+class ParticipantImpactResponse(BaseModel):
+    fullName: str
+    email: str
+    institutionName: str
+    department: str
+    totalAttempts: int
+    nashaMuktiAttempts: int
+    unityDayAttempts: int
+    certificateCount: int
+    certificateIds: List[str] = []
+    inLeaderboard: bool
+    attemptIds: List[str] = []
+

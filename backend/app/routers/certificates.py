@@ -109,6 +109,13 @@ async def generate_certificate(
             detail="Quiz completion record not found. Please complete the quiz first.",
         )
 
+    # 1b. Verify attempt is not deleted/revoked
+    if attempt.get("isDeleted", False):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot issue a certificate for a deleted or revoked quiz attempt.",
+        )
+
     # 2. Verify passing requirement
     if not attempt.get("passed", False):
         raise HTTPException(
@@ -132,6 +139,11 @@ async def generate_certificate(
     # 4. Check for existing certificate to prevent duplicate IDs
     existing = await db["certificates"].find_one({"attemptId": attempt_id})
     if existing:
+        if existing.get("isDeleted", False):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This certificate has been revoked or removed by the administration.",
+            )
         font_name, font_label = get_font_for_certificate(cert_type)
         return CertificatePublicResponse(
             certificateId=existing["certificateId"],
@@ -232,9 +244,9 @@ async def check_certificate_for_attempt(
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
     """
-    Checks if a certificate has already been issued for a specific quiz attempt.
+    Checks if an active, unrevoked certificate has already been issued for a specific quiz attempt.
     """
-    cert = await db["certificates"].find_one({"attemptId": attempt_id.strip()})
+    cert = await db["certificates"].find_one({"attemptId": attempt_id.strip(), "isDeleted": {"$ne": True}})
     if not cert:
         return None
 
@@ -265,15 +277,21 @@ async def check_certificate_for_attempt(
 async def list_certificates_admin(
     search: Optional[str] = Query(None, description="Search by name, email, roll number, or certificate ID"),
     quiz_id: Optional[str] = Query(None, description="Filter by quizId"),
+    status: str = Query("active", description="Filter active, deleted, or all"),
     limit: int = Query(50, ge=1, le=500),
     skip: int = Query(0, ge=0),
     current_admin: Dict[str, Any] = Depends(require_editor_or_above),
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
     """
-    Administrative lookup of all issued certificates with search and filtering.
+    Administrative lookup of issued certificates with search, filtering, and deletion state support.
     """
-    query = {}
+    query: Dict[str, Any] = {}
+    if status == "active":
+        query["isDeleted"] = {"$ne": True}
+    elif status == "deleted":
+        query["isDeleted"] = True
+
     if quiz_id and quiz_id != "all":
         query["quizId"] = quiz_id
 
@@ -446,10 +464,10 @@ async def get_certificate_details(
     Public lookup endpoint to verify authentic certificate credentials.
     """
     cert = await db["certificates"].find_one({"certificateId": certificate_id.strip()})
-    if not cert:
+    if not cert or cert.get("isDeleted", False):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Certificate '{certificate_id}' not found in official institutional registry.",
+            detail=f"Certificate '{certificate_id}' was not found in official institutional registry or has been revoked.",
         )
 
     _, font_label = get_font_for_certificate(cert["certificateType"])
@@ -482,10 +500,10 @@ async def download_certificate_pdf(
     Supports on-demand regeneration if the PDF is not present on ephemeral disk.
     """
     cert = await db["certificates"].find_one({"certificateId": certificate_id.strip()})
-    if not cert:
+    if not cert or cert.get("isDeleted", False):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Certificate '{certificate_id}' not found.",
+            detail=f"Certificate '{certificate_id}' not found or has been revoked.",
         )
 
     # Increment download counter

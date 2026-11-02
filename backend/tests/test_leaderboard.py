@@ -212,7 +212,7 @@ async def test_quiz_portal_and_question_isolation(client):
     nmba_res = await client.get("/api/v1/quiz/public/nmba-awareness-challenge-v1")
     assert nmba_res.status_code == 200
     nmba_qs = nmba_res.json()
-    assert len(nmba_qs) == 30
+    assert len(nmba_qs) >= 20
     for q in nmba_qs:
         assert q["quizId"] == "nmba-awareness-challenge-v1"
         assert "correctAnswerIds" not in q

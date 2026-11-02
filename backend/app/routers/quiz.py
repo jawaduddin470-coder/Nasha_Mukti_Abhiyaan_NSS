@@ -6,6 +6,8 @@ Server-side authoritative scoring, participant attempt recording, and Excel expo
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
+import os
+import re
 import io
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
@@ -33,7 +35,13 @@ from backend.app.schemas.quiz import (
     LeaderboardAdminResponse,
     LeaderboardSettingsUpdate,
     AttemptOverrideRequest,
+    AttemptDeleteRequest,
+    ParticipantDeleteRequest,
+    ParticipantRestoreRequest,
+    ParticipantPermanentDeleteRequest,
+    ParticipantImpactResponse,
 )
+from backend.app.services.certificate_generator import UPLOADS_CERT_DIR
 from backend.app.utils.audit import record_audit_log
 
 router = APIRouter(tags=["Quiz"])
@@ -490,19 +498,78 @@ async def delete_quiz_question(
 # Protected Quiz Attempts & Excel Export
 @router.get("/admin/quiz/attempts")
 async def list_quiz_attempts(
+    status: str = Query("active", description="Filter by state: 'active', 'deleted', or 'all'"),
+    quiz_id: Optional[str] = Query(None, description="Filter by quiz ID or alias"),
+    passed: Optional[bool] = Query(None, description="Filter by pass status"),
+    search: Optional[str] = Query(None, description="Search participant name, email, roll number, or attempt ID"),
+    department: Optional[str] = Query(None, description="Filter by department"),
+    institution: Optional[str] = Query(None, description="Filter by institution"),
     limit: int = Query(50, ge=1, le=200),
     skip: int = Query(0, ge=0),
     current_admin: Dict[str, Any] = Depends(require_editor_or_above),
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
-    """Lists real participant attempts from MongoDB with pagination."""
-    cursor = db["quiz_attempts"].find().sort("submittedAt", -1).skip(skip).limit(limit)
-    total = await db["quiz_attempts"].count_documents({})
+    """Lists real participant attempts from MongoDB with pagination, multi-filter search, and soft-delete support."""
+    query: Dict[str, Any] = {}
+
+    if status == "active":
+        query["isDeleted"] = {"$ne": True}
+    elif status == "deleted":
+        query["isDeleted"] = True
+    # 'all' shows both active and deleted
+
+    if quiz_id and quiz_id != "all":
+        if quiz_id in QUIZ_REGISTRY:
+            aliases = QUIZ_REGISTRY[quiz_id].get("aliases", [quiz_id])
+            query["quizId"] = {"$in": aliases}
+        else:
+            query["quizId"] = quiz_id
+
+    if passed is not None:
+        query["passed"] = passed
+
+    if department and department != "all":
+        query["participant.department"] = department
+
+    if institution and institution != "all":
+        query["participant.institutionName"] = institution
+
+    if search and search.strip():
+        term = search.strip()
+        query["$or"] = [
+            {"participant.fullName": {"$regex": term, "$options": "i"}},
+            {"participant.email": {"$regex": term, "$options": "i"}},
+            {"participant.rollNumber": {"$regex": term, "$options": "i"}},
+            {"attemptId": {"$regex": term, "$options": "i"}},
+        ]
+
+    active_total = await db["quiz_attempts"].count_documents({"isDeleted": {"$ne": True}})
+    deleted_total = await db["quiz_attempts"].count_documents({"isDeleted": True})
+    filtered_total = await db["quiz_attempts"].count_documents(query)
+
+    cursor = db["quiz_attempts"].find(query).sort("submittedAt", -1).skip(skip).limit(limit)
     items = []
     async for doc in cursor:
         doc["_id"] = str(doc["_id"])
+        # Attach associated certificate summary if available
+        cert = await db["certificates"].find_one({"attemptId": doc.get("attemptId")})
+        if cert:
+            doc["certificate"] = {
+                "certificateId": cert.get("certificateId"),
+                "issuedAt": cert.get("issuedAt"),
+                "downloadUrl": f"/api/v1/certificates/{cert.get('certificateId')}/download",
+                "isDeleted": cert.get("isDeleted", False),
+            }
         items.append(doc)
-    return {"total": total, "items": items, "limit": limit, "skip": skip}
+
+    return {
+        "total": filtered_total,
+        "activeTotal": active_total,
+        "deletedTotal": deleted_total,
+        "items": items,
+        "limit": limit,
+        "skip": skip,
+    }
 
 
 @router.get("/admin/quiz/export")
@@ -511,10 +578,10 @@ async def export_quiz_attempts_excel(
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
     """
-    Generates and returns an authentic .xlsx Excel workbook containing all participant
+    Generates and returns an authentic .xlsx Excel workbook containing all active participant
     quiz attempts and aggregate statistics using OpenPyXL.
     """
-    cursor = db["quiz_attempts"].find().sort("submittedAt", -1)
+    cursor = db["quiz_attempts"].find({"isDeleted": {"$ne": True}}).sort("submittedAt", -1)
     attempts = []
     async for doc in cursor:
         attempts.append(doc)
@@ -752,7 +819,7 @@ async def compute_unified_rankings(
     4. Applies eligibility rule ('any' or 'both').
     5. Standard Olympic ranking based on (-combinedScore, totalTimeSeconds, latest_submittedAt).
     """
-    cursor = db["quiz_attempts"].find()
+    cursor = db["quiz_attempts"].find({"isDeleted": {"$ne": True}})
     attempts = []
     async for a in cursor:
         attempts.append(a)
@@ -924,7 +991,7 @@ async def compute_quiz_rankings(
         return await compute_unified_rankings(db, cfg)
 
     query_ids = quiz_meta.get("aliases", [quiz_meta["id"]])
-    cursor = db["quiz_attempts"].find({"quizId": {"$in": query_ids}})
+    cursor = db["quiz_attempts"].find({"quizId": {"$in": query_ids}, "isDeleted": {"$ne": True}})
     attempts = []
     async for a in cursor:
         attempts.append(a)
@@ -1339,3 +1406,526 @@ async def override_quiz_attempt(
     )
 
     return {"success": True, "message": f"Attempt '{attempt_id}' updated successfully."}
+
+
+# =========================================================================
+# PARTICIPANT & ATTEMPT SECURE DELETION & MANAGEMENT ENDPOINTS
+# =========================================================================
+
+@router.get("/admin/quiz/attempts/{attempt_id}")
+async def get_quiz_attempt_details(
+    attempt_id: str,
+    current_admin: Dict[str, Any] = Depends(require_editor_or_above),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """Retrieves full submission details for an individual attempt."""
+    att = await db["quiz_attempts"].find_one({"attemptId": attempt_id.strip()})
+    if not att:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Attempt '{attempt_id}' not found.",
+        )
+
+    att["_id"] = str(att["_id"])
+    cert = await db["certificates"].find_one({"attemptId": attempt_id.strip()})
+    if cert:
+        att["certificate"] = {
+            "certificateId": cert.get("certificateId"),
+            "issuedAt": cert.get("issuedAt"),
+            "downloadUrl": f"/api/v1/certificates/{cert.get('certificateId')}/download",
+            "isDeleted": cert.get("isDeleted", False),
+        }
+    return att
+
+
+@router.delete("/admin/quiz/attempts/{attempt_id}")
+async def delete_quiz_attempt(
+    attempt_id: str,
+    reason: Optional[str] = Query("Administrative removal", description="Reason for deletion"),
+    current_admin: Dict[str, Any] = Depends(require_editor_or_above),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Soft-deletes a single quiz attempt.
+    Preserves all other attempts belonging to the same participant.
+    Also flags the associated certificate record as deleted.
+    """
+    attempt = await db["quiz_attempts"].find_one({"attemptId": attempt_id.strip()})
+    if not attempt:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Attempt '{attempt_id}' not found.",
+        )
+
+    if attempt.get("isDeleted", False):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Attempt '{attempt_id}' is already in the deleted records archive.",
+        )
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    deletion_doc = {
+        "isDeleted": True,
+        "deletedAt": now_iso,
+        "deletedBy": current_admin["email"],
+        "deletionReason": reason or "Administrative removal",
+    }
+
+    # Soft-delete the attempt
+    await db["quiz_attempts"].update_one({"attemptId": attempt_id.strip()}, {"$set": deletion_doc})
+
+    # Soft-delete associated certificate
+    await db["certificates"].update_many(
+        {"attemptId": attempt_id.strip()},
+        {"$set": deletion_doc},
+    )
+
+    participant = attempt.get("participant", {})
+    await record_audit_log(
+        db,
+        actor_email=current_admin["email"],
+        action="soft_delete_quiz_attempt",
+        module="quiz_attempts",
+        record_id=attempt_id.strip(),
+        metadata={
+            "participantName": participant.get("fullName"),
+            "participantEmail": participant.get("email"),
+            "quizId": attempt.get("quizId"),
+            "score": attempt.get("score"),
+            "reason": reason,
+        },
+    )
+
+    return {
+        "success": True,
+        "message": f"Quiz attempt '{attempt_id}' has been safely archived.",
+        "attemptId": attempt_id.strip(),
+        "participantName": participant.get("fullName"),
+    }
+
+
+@router.post("/admin/quiz/attempts/{attempt_id}/restore")
+async def restore_quiz_attempt(
+    attempt_id: str,
+    current_admin: Dict[str, Any] = Depends(require_editor_or_above),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Restores an accidentally deleted quiz attempt back to active standing.
+    Restores associated certificate availability and leaderboard eligibility.
+    """
+    attempt = await db["quiz_attempts"].find_one({"attemptId": attempt_id.strip()})
+    if not attempt:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Attempt '{attempt_id}' not found.",
+        )
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    restore_doc = {
+        "isDeleted": False,
+        "restoredAt": now_iso,
+        "restoredBy": current_admin["email"],
+    }
+
+    await db["quiz_attempts"].update_one(
+        {"attemptId": attempt_id.strip()},
+        {"$set": restore_doc, "$unset": {"deletedAt": "", "deletedBy": "", "deletionReason": ""}},
+    )
+
+    await db["certificates"].update_many(
+        {"attemptId": attempt_id.strip()},
+        {"$set": restore_doc, "$unset": {"deletedAt": "", "deletedBy": "", "deletionReason": ""}},
+    )
+
+    participant = attempt.get("participant", {})
+    await record_audit_log(
+        db,
+        actor_email=current_admin["email"],
+        action="restore_quiz_attempt",
+        module="quiz_attempts",
+        record_id=attempt_id.strip(),
+        metadata={
+            "participantName": participant.get("fullName"),
+            "participantEmail": participant.get("email"),
+            "quizId": attempt.get("quizId"),
+        },
+    )
+
+    return {
+        "success": True,
+        "message": f"Quiz attempt '{attempt_id}' and credentials have been restored.",
+        "attemptId": attempt_id.strip(),
+    }
+
+
+@router.delete("/admin/quiz/attempts/{attempt_id}/permanent")
+async def permanent_delete_quiz_attempt(
+    attempt_id: str,
+    current_admin: Dict[str, Any] = Depends(require_super_admin),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Permanently purges a single quiz attempt and associated certificate.
+    STRICT RBAC: Only Super Admins can execute permanent deletion.
+    """
+    attempt = await db["quiz_attempts"].find_one({"attemptId": attempt_id.strip()})
+    if not attempt:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Attempt '{attempt_id}' not found.",
+        )
+
+    # Delete physical certificate PDF if it exists
+    certs = await db["certificates"].find({"attemptId": attempt_id.strip()}).to_list(10)
+    for c in certs:
+        cert_id = c.get("certificateId")
+        if cert_id:
+            pdf_path = os.path.join(UPLOADS_CERT_DIR, f"{cert_id}.pdf")
+            if os.path.exists(pdf_path):
+                try:
+                    os.remove(pdf_path)
+                except Exception:
+                    pass
+
+    # Purge records from MongoDB
+    await db["quiz_attempts"].delete_one({"attemptId": attempt_id.strip()})
+    await db["certificates"].delete_many({"attemptId": attempt_id.strip()})
+
+    participant = attempt.get("participant", {})
+    await record_audit_log(
+        db,
+        actor_email=current_admin["email"],
+        action="permanent_delete_quiz_attempt",
+        module="quiz_attempts",
+        record_id=attempt_id.strip(),
+        metadata={
+            "participantName": participant.get("fullName"),
+            "participantEmail": participant.get("email"),
+            "quizId": attempt.get("quizId"),
+            "score": attempt.get("score"),
+            "permanent": True,
+        },
+    )
+
+    return {
+        "success": True,
+        "message": f"Quiz attempt '{attempt_id}' and associated certificate records were permanently purged.",
+    }
+
+
+@router.get("/admin/quiz/participants/impact", response_model=ParticipantImpactResponse)
+async def get_participant_impact(
+    email: str = Query(..., description="Registered email of participant"),
+    current_admin: Dict[str, Any] = Depends(require_editor_or_above),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Inspects participant records across all initiatives before deletion.
+    Returns impact summary: attempt counts, certificate counts, and leaderboard presence.
+    """
+    clean_email = email.strip()
+    email_regex = f"^{re.escape(clean_email)}$"
+
+    cursor = db["quiz_attempts"].find({"participant.email": {"$regex": email_regex, "$options": "i"}})
+    attempts = await cursor.to_list(200)
+
+    if not attempts:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No quiz submissions found for participant email '{clean_email}'.",
+        )
+
+    first_p = attempts[0].get("participant", {})
+    full_name = first_p.get("fullName", "Unknown Participant")
+    inst = first_p.get("institutionName", "MJCET")
+    dept = first_p.get("department", "General")
+
+    nmba_aliases = [a.lower() for a in QUIZ_REGISTRY["nmba-awareness-challenge-v1"]["aliases"]]
+    unity_aliases = [a.lower() for a in QUIZ_REGISTRY["national-unity-day-quiz-v1"]["aliases"]]
+
+    nmba_count = sum(1 for a in attempts if a.get("quizId", "").lower() in nmba_aliases)
+    unity_count = sum(1 for a in attempts if a.get("quizId", "").lower() in unity_aliases)
+    attempt_ids = [a.get("attemptId") for a in attempts if a.get("attemptId")]
+
+    # Fetch associated certificates
+    certs = await db["certificates"].find({"attemptId": {"$in": attempt_ids}}).to_list(200)
+    cert_ids = [c.get("certificateId") for c in certs if c.get("certificateId")]
+
+    # Check leaderboard eligibility
+    has_passed = any(a.get("passed", False) and not a.get("isDeleted", False) for a in attempts)
+
+    return ParticipantImpactResponse(
+        fullName=full_name,
+        email=clean_email,
+        institutionName=inst,
+        department=dept,
+        totalAttempts=len(attempts),
+        nashaMuktiAttempts=nmba_count,
+        unityDayAttempts=unity_count,
+        certificateCount=len(cert_ids),
+        certificateIds=cert_ids,
+        inLeaderboard=has_passed,
+        attemptIds=attempt_ids,
+    )
+
+
+@router.post("/admin/quiz/participants/delete")
+async def delete_participant(
+    payload: ParticipantDeleteRequest,
+    current_admin: Dict[str, Any] = Depends(require_editor_or_above),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Soft-deletes an entire participant across all initiatives.
+    Archives all attempts and certificate records for the participant.
+    Excludes the participant from all active tables, analytics, and leaderboards.
+    Requires typed confirmation: payload.confirmation == 'DELETE'.
+    """
+    if payload.confirmation.strip() != "DELETE":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Confirmation text must be exactly 'DELETE' to confirm participant deletion.",
+        )
+
+    clean_email = payload.email.strip()
+    email_regex = f"^{re.escape(clean_email)}$"
+
+    cursor = db["quiz_attempts"].find({"participant.email": {"$regex": email_regex, "$options": "i"}})
+    attempts = await cursor.to_list(200)
+    if not attempts:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No participant records found for email '{clean_email}'.",
+        )
+
+    attempt_ids = [a.get("attemptId") for a in attempts if a.get("attemptId")]
+    now_iso = datetime.now(timezone.utc).isoformat()
+    deletion_doc = {
+        "isDeleted": True,
+        "deletedAt": now_iso,
+        "deletedBy": current_admin["email"],
+        "deletionReason": payload.reason or "Administrative participant removal",
+    }
+
+    # Soft-delete all matching attempts
+    res_att = await db["quiz_attempts"].update_many(
+        {"participant.email": {"$regex": email_regex, "$options": "i"}},
+        {"$set": deletion_doc},
+    )
+
+    # Soft-delete all associated certificates
+    res_cert = await db["certificates"].update_many(
+        {"attemptId": {"$in": attempt_ids}},
+        {"$set": deletion_doc},
+    )
+
+    participant_name = attempts[0].get("participant", {}).get("fullName", clean_email)
+    await record_audit_log(
+        db,
+        actor_email=current_admin["email"],
+        action="soft_delete_participant",
+        module="quiz_participants",
+        record_id=clean_email,
+        metadata={
+            "participantName": participant_name,
+            "participantEmail": clean_email,
+            "attemptsArchived": res_att.modified_count,
+            "certificatesArchived": res_cert.modified_count,
+            "reason": payload.reason,
+        },
+    )
+
+    return {
+        "success": True,
+        "message": f"Participant '{participant_name}' ({clean_email}) and all associated records have been archived.",
+        "email": clean_email,
+        "attemptsArchived": res_att.modified_count,
+        "certificatesArchived": res_cert.modified_count,
+    }
+
+
+@router.post("/admin/quiz/participants/restore")
+async def restore_participant(
+    payload: ParticipantRestoreRequest,
+    current_admin: Dict[str, Any] = Depends(require_editor_or_above),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Restores an archived participant and all associated attempts and certificates.
+    Restores participant eligibility across active tables, analytics, and leaderboards.
+    """
+    clean_email = payload.email.strip()
+    email_regex = f"^{re.escape(clean_email)}$"
+
+    cursor = db["quiz_attempts"].find({"participant.email": {"$regex": email_regex, "$options": "i"}})
+    attempts = await cursor.to_list(200)
+    if not attempts:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No participant records found for email '{clean_email}'.",
+        )
+
+    attempt_ids = [a.get("attemptId") for a in attempts if a.get("attemptId")]
+    now_iso = datetime.now(timezone.utc).isoformat()
+    restore_doc = {
+        "isDeleted": False,
+        "restoredAt": now_iso,
+        "restoredBy": current_admin["email"],
+    }
+
+    res_att = await db["quiz_attempts"].update_many(
+        {"participant.email": {"$regex": email_regex, "$options": "i"}},
+        {"$set": restore_doc, "$unset": {"deletedAt": "", "deletedBy": "", "deletionReason": ""}},
+    )
+
+    res_cert = await db["certificates"].update_many(
+        {"attemptId": {"$in": attempt_ids}},
+        {"$set": restore_doc, "$unset": {"deletedAt": "", "deletedBy": "", "deletionReason": ""}},
+    )
+
+    participant_name = attempts[0].get("participant", {}).get("fullName", clean_email)
+    await record_audit_log(
+        db,
+        actor_email=current_admin["email"],
+        action="restore_participant",
+        module="quiz_participants",
+        record_id=clean_email,
+        metadata={
+            "participantName": participant_name,
+            "participantEmail": clean_email,
+            "attemptsRestored": res_att.modified_count,
+            "certificatesRestored": res_cert.modified_count,
+        },
+    )
+
+    return {
+        "success": True,
+        "message": f"Participant '{participant_name}' ({clean_email}) and all credentials have been restored.",
+        "email": clean_email,
+        "attemptsRestored": res_att.modified_count,
+        "certificatesRestored": res_cert.modified_count,
+    }
+
+
+@router.post("/admin/quiz/participants/permanent-delete")
+async def permanent_delete_participant(
+    payload: ParticipantPermanentDeleteRequest,
+    current_admin: Dict[str, Any] = Depends(require_super_admin),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Permanently purges all attempts, certificates, and submission data for a participant.
+    STRICT RBAC: Only Super Admins can execute permanent deletion.
+    Requires typed confirmation: payload.confirmation == 'DELETE'.
+    """
+    if payload.confirmation.strip() != "DELETE":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Confirmation text must be exactly 'DELETE' to confirm permanent deletion.",
+        )
+
+    clean_email = payload.email.strip()
+    email_regex = f"^{re.escape(clean_email)}$"
+
+    cursor = db["quiz_attempts"].find({"participant.email": {"$regex": email_regex, "$options": "i"}})
+    attempts = await cursor.to_list(200)
+    if not attempts:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No participant records found for email '{clean_email}'.",
+        )
+
+    attempt_ids = [a.get("attemptId") for a in attempts if a.get("attemptId")]
+
+    # Delete physical certificate PDFs
+    certs = await db["certificates"].find({"attemptId": {"$in": attempt_ids}}).to_list(200)
+    for c in certs:
+        cert_id = c.get("certificateId")
+        if cert_id:
+            pdf_path = os.path.join(UPLOADS_CERT_DIR, f"{cert_id}.pdf")
+            if os.path.exists(pdf_path):
+                try:
+                    os.remove(pdf_path)
+                except Exception:
+                    pass
+
+    # Delete from MongoDB
+    res_att = await db["quiz_attempts"].delete_many({"participant.email": {"$regex": email_regex, "$options": "i"}})
+    res_cert = await db["certificates"].delete_many({"attemptId": {"$in": attempt_ids}})
+
+    participant_name = attempts[0].get("participant", {}).get("fullName", clean_email)
+    await record_audit_log(
+        db,
+        actor_email=current_admin["email"],
+        action="permanent_delete_participant",
+        module="quiz_participants",
+        record_id=clean_email,
+        metadata={
+            "participantName": participant_name,
+            "participantEmail": clean_email,
+            "attemptsPurged": res_att.deleted_count,
+            "certificatesPurged": res_cert.deleted_count,
+            "permanent": True,
+        },
+    )
+
+    return {
+        "success": True,
+        "message": f"Participant '{participant_name}' ({clean_email}) and all records were permanently purged.",
+        "email": clean_email,
+        "attemptsPurged": res_att.deleted_count,
+        "certificatesPurged": res_cert.deleted_count,
+    }
+
+
+@router.get("/admin/quiz/participants/history")
+async def get_participant_history(
+    email: str = Query(..., description="Registered email of participant"),
+    current_admin: Dict[str, Any] = Depends(require_editor_or_above),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
+    """
+    Returns the complete journey and attempt history for a participant across all quizzes,
+    including both active and archived attempts, certificates, scores, and timestamps.
+    """
+    clean_email = email.strip()
+    email_regex = f"^{re.escape(clean_email)}$"
+
+    cursor = db["quiz_attempts"].find({"participant.email": {"$regex": email_regex, "$options": "i"}}).sort("submittedAt", -1)
+    attempts = await cursor.to_list(200)
+
+    if not attempts:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No quiz history found for participant email '{clean_email}'.",
+        )
+
+    attempt_ids = [a.get("attemptId") for a in attempts if a.get("attemptId")]
+    certs = await db["certificates"].find({"attemptId": {"$in": attempt_ids}}).to_list(200)
+    certs_by_attempt = {c.get("attemptId"): c for c in certs}
+
+    history_items = []
+    for a in attempts:
+        a["_id"] = str(a["_id"])
+        c = certs_by_attempt.get(a.get("attemptId"))
+        if c:
+            a["certificate"] = {
+                "certificateId": c.get("certificateId"),
+                "issuedAt": c.get("issuedAt"),
+                "downloadUrl": f"/api/v1/certificates/{c.get('certificateId')}/download",
+                "isDeleted": c.get("isDeleted", False),
+            }
+        history_items.append(a)
+
+    first_p = attempts[0].get("participant", {})
+    return {
+        "fullName": first_p.get("fullName", "Unknown Participant"),
+        "email": clean_email,
+        "institutionName": first_p.get("institutionName", "MJCET"),
+        "department": first_p.get("department", "General"),
+        "rollNumber": first_p.get("rollNumber", ""),
+        "totalAttempts": len(attempts),
+        "attempts": history_items,
+    }
+

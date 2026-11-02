@@ -366,6 +366,96 @@ class QuizService {
   }
 
   /**
+   * Participant Management & Secure Deletion System
+   */
+  async getAdminAttempts(params?: {
+    status?: string;
+    quiz_id?: string;
+    passed?: boolean;
+    search?: string;
+    department?: string;
+    institution?: string;
+    limit?: number;
+    skip?: number;
+  }): Promise<{
+    total: number;
+    activeTotal: number;
+    deletedTotal: number;
+    items: any[];
+    limit: number;
+    skip: number;
+  }> {
+    const query = new URLSearchParams();
+    if (params?.status) query.set('status', params.status);
+    if (params?.quiz_id && params.quiz_id !== 'all') query.set('quiz_id', params.quiz_id);
+    if (params?.passed !== undefined) query.set('passed', String(params.passed));
+    if (params?.search) query.set('search', params.search);
+    if (params?.department && params.department !== 'all') query.set('department', params.department);
+    if (params?.institution && params.institution !== 'all') query.set('institution', params.institution);
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.skip) query.set('skip', String(params.skip));
+
+    const qs = query.toString();
+    return apiClient.get(`/admin/quiz/attempts${qs ? `?${qs}` : ''}`);
+  }
+
+  async getAttemptDetails(attemptId: string): Promise<any> {
+    return apiClient.get(`/admin/quiz/attempts/${attemptId}`);
+  }
+
+  async deleteAttempt(attemptId: string, reason?: string): Promise<any> {
+    const qs = reason ? `?reason=${encodeURIComponent(reason)}` : '';
+    return apiClient.delete(`/admin/quiz/attempts/${attemptId}${qs}`);
+  }
+
+  async restoreAttempt(attemptId: string): Promise<any> {
+    return apiClient.post(`/admin/quiz/attempts/${attemptId}/restore`);
+  }
+
+  async permanentDeleteAttempt(attemptId: string): Promise<any> {
+    return apiClient.delete(`/admin/quiz/attempts/${attemptId}/permanent`);
+  }
+
+  async getParticipantImpact(email: string): Promise<{
+    fullName: string;
+    email: string;
+    institutionName: string;
+    department: string;
+    totalAttempts: number;
+    nashaMuktiAttempts: number;
+    unityDayAttempts: number;
+    certificateCount: number;
+    certificateIds: string[];
+    inLeaderboard: boolean;
+    attemptIds: string[];
+  }> {
+    return apiClient.get(`/admin/quiz/participants/impact?email=${encodeURIComponent(email)}`);
+  }
+
+  async deleteParticipant(email: string, reason?: string, confirmation = 'DELETE'): Promise<any> {
+    return apiClient.post('/admin/quiz/participants/delete', {
+      email,
+      reason,
+      confirmation,
+    });
+  }
+
+  async restoreParticipant(email: string): Promise<any> {
+    return apiClient.post('/admin/quiz/participants/restore', { email });
+  }
+
+  async permanentDeleteParticipant(email: string, confirmation = 'DELETE'): Promise<any> {
+    return apiClient.post('/admin/quiz/participants/permanent-delete', {
+      email,
+      confirmation,
+    });
+  }
+
+  async getParticipantHistory(email: string): Promise<any> {
+    return apiClient.get(`/admin/quiz/participants/history?email=${encodeURIComponent(email)}`);
+  }
+
+  /**
    * Aggregate statistics
    */
   async getAdminStats(): Promise<AdminQuizStats> {

@@ -25,7 +25,6 @@ import {
   Plus,
   Trash2,
   Edit2,
-  Download,
   CheckCircle2,
   Menu,
   X,
@@ -36,15 +35,13 @@ import {
   Search,
   Upload,
   AlertCircle,
-  Loader2,
   Trophy,
   Archive,
   RotateCcw,
   Sliders,
 } from 'lucide-react';
 import { useAdminAuth, AdminRole } from '../../context/AdminAuthContext';
-import { apiClient, API_BASE_URL } from '../../services/apiClient';
-import { auth } from '../../lib/firebase/config';
+import { apiClient } from '../../services/apiClient';
 import { MediaPickerInput } from '../../components/admin/MediaPickerInput';
 import { MediaLibraryModal } from '../../components/admin/MediaLibraryModal';
 import { MediaItem, fetchMediaItems, deleteMediaAsset } from '../../services/mediaService';
@@ -52,6 +49,7 @@ import { HomepageContentManager } from '../../components/admin/HomepageContentMa
 import { QuizLeaderboardManager } from '../../components/admin/QuizLeaderboardManager';
 import { QuizCurriculumManager } from '../../components/admin/QuizCurriculumManager';
 import { CertificateManager } from '../../components/admin/CertificateManager';
+import { QuizParticipantsManager } from '../../components/admin/QuizParticipantsManager';
 import { PermanentDeleteModal } from '../../components/admin/PermanentDeleteModal';
 import { activityService } from '../../services/activityService';
 import { galleryService } from '../../services/galleryService';
@@ -2224,164 +2222,10 @@ const DevelopersView: React.FC = () => {
 };
 
 // =============================================================
-// 6. QUIZ PARTICIPANTS & EXCEL EXPORT VIEW (Role Separated)
+// 6. QUIZ PARTICIPANTS & SECURE DELETION MANAGER
 // =============================================================
 const QuizParticipantsView: React.FC<{ isSuperAdmin?: boolean }> = ({ isSuperAdmin = false }) => {
-  const [attempts, setAttempts] = useState<any[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState(false);
-
-  const fetchAttempts = async () => {
-    setLoading(true);
-    try {
-      const res = await apiClient.get<any>('/admin/quiz/attempts?limit=50');
-      setAttempts(res.items || []);
-      setTotal(res.total || 0);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAttempts();
-  }, []);
-
-  const handleExportExcel = async () => {
-    setExporting(true);
-    try {
-      let authHeader = '';
-      if (auth && auth.currentUser) {
-        const token = await auth.currentUser.getIdToken();
-        authHeader = `Bearer ${token}`;
-      } else if (import.meta.env.DEV) {
-        const devToken = localStorage.getItem('nmba_admin_dev_token');
-        if (devToken) authHeader = `Bearer ${devToken}`;
-      }
-
-      const res = await fetch(`${API_BASE_URL}/admin/quiz/export`, {
-        headers: authHeader ? { Authorization: authHeader } : {},
-      });
-
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.detail || 'Export request failed');
-      }
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `nss_mjcet_quiz_attempts_${new Date().toISOString().slice(0, 10)}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch (err: any) {
-      alert(err.message || 'Excel export failed.');
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  return (
-    <div className="space-y-6 max-w-6xl">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[#183153] tracking-tight">Quiz Participants & Analytics</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Authoritative participant submissions recorded in MongoDB Atlas ({total} total attempts).
-          </p>
-        </div>
-        {/* Strictly hide Excel Export for Editors, visible only to Super Admins */}
-        {isSuperAdmin && (
-          <button
-            onClick={handleExportExcel}
-            disabled={exporting}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#239B70] text-white text-xs font-semibold hover:bg-[#1D8560] shadow-sm transition-all self-start disabled:opacity-50"
-          >
-            {exporting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Exporting Workbook...</span>
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4" />
-                <span>Export to Excel (.xlsx)</span>
-              </>
-            )}
-          </button>
-        )}
-      </div>
-
-      {loading ? (
-        <div className="py-20 flex justify-center">
-          <div className="w-8 h-8 border-3 border-[#159E9A] border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : (
-        <div className="bg-[#EAF5FB] rounded-2xl border border-[#CFE3F0] shadow-sm overflow-hidden">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-[#D7E7F0] bg-[#F0F7FB] text-[#183153] font-semibold uppercase tracking-wider">
-                <th className="py-3 px-4">Participant</th>
-                <th className="py-3 px-3">Institution & Dept</th>
-                <th className="py-3 px-3">Score</th>
-                <th className="py-3 px-3">Status</th>
-                <th className="py-3 px-3">Badge</th>
-                <th className="py-3 px-4">Submitted</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#D7E7F0]">
-              {attempts.length > 0 ? (
-                attempts.map((att) => {
-                  const p = att.participant || {};
-                  return (
-                    <tr key={att.attemptId} className="hover:bg-[#F0F7FB]/60">
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-[#183153]">{p.fullName}</div>
-                        <div className="text-[11px] text-slate-500">{p.email}</div>
-                      </td>
-                      <td className="py-3.5 px-3">
-                        <div className="text-slate-700 font-medium">{p.institutionName}</div>
-                        <div className="text-[11px] text-slate-500">{p.department}</div>
-                      </td>
-                      <td className="py-3.5 px-3 font-mono font-bold text-[#183153]">
-                        {att.percentage}% ({att.score}/{att.maxScore})
-                      </td>
-                      <td className="py-3.5 px-3">
-                        <span
-                          className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
-                            att.passed
-                              ? 'bg-emerald-50 text-[#239B70] border border-emerald-200'
-                              : 'bg-amber-50 text-amber-700 border border-amber-200'
-                          }`}
-                        >
-                          {att.passed ? 'PASSED' : 'ATTEMPTED'}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-3 text-slate-600">{att.badgeName}</td>
-                      <td className="py-3.5 px-4 font-mono text-[11px] text-slate-500">
-                        {new Date(att.submittedAt).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">
-                    No quiz attempts recorded yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
+  return <QuizParticipantsManager isSuperAdmin={isSuperAdmin} />;
 };
 
 // =============================================================
