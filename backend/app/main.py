@@ -64,9 +64,14 @@ async def lifespan(app: FastAPI):
             pass
 
     # Connect to MongoDB Atlas
-    await connect_to_mongo()
-    # Verify indexes
-    if db_manager.database is not None:
+    is_connected = False
+    try:
+        is_connected = await connect_to_mongo()
+    except Exception as e:
+        logger.warning(f"MongoDB startup connection check warning: {e}")
+
+    # Verify indexes only when connected, and skip during ephemeral serverless invocations
+    if is_connected and not os.environ.get("VERCEL"):
         try:
             await create_indexes(db_manager.database)
         except Exception as e:

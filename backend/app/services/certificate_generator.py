@@ -24,10 +24,21 @@ logger = logging.getLogger("nmba_backend.certificates")
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FONTS_DIR = os.path.join(BASE_DIR, "assets", "fonts")
 CERT_TEMPLATES_DIR = os.path.join(BASE_DIR, "assets", "certificates")
-UPLOADS_CERT_DIR = os.path.join(os.path.dirname(BASE_DIR), "uploads", "certificates")
 
-# Ensure certificates upload folder exists
-os.makedirs(UPLOADS_CERT_DIR, exist_ok=True)
+# Ensure writable directory for serverless environments (Vercel uses /tmp)
+if os.environ.get("VERCEL"):
+    UPLOADS_CERT_DIR = "/tmp/uploads/certificates"
+else:
+    UPLOADS_CERT_DIR = os.path.join(os.path.dirname(BASE_DIR), "uploads", "certificates")
+
+try:
+    os.makedirs(UPLOADS_CERT_DIR, exist_ok=True)
+except OSError:
+    UPLOADS_CERT_DIR = "/tmp/uploads/certificates"
+    try:
+        os.makedirs(UPLOADS_CERT_DIR, exist_ok=True)
+    except OSError:
+        pass
 
 # Track registered fonts
 _REGISTERED_FONTS = set()

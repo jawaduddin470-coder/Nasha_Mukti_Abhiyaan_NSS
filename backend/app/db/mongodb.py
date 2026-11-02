@@ -51,15 +51,18 @@ def init_mongo_client() -> Optional[AsyncIOMotorDatabase]:
         return None
 
 
-async def connect_to_mongo() -> None:
+async def connect_to_mongo() -> bool:
     """Initialize MongoDB Atlas connection pool and verify connectivity."""
     db = init_mongo_client()
     if db is not None:
         try:
             await db.command("ping")
             logger.info(f"Connected and pinged MongoDB Atlas: database='{settings.DATABASE_NAME}'")
+            return True
         except Exception as e:
             logger.error(f"Failed to ping MongoDB Atlas: {e}")
+            return False
+    return False
 
 
 async def close_mongo_connection() -> None:
